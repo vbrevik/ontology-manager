@@ -1,0 +1,19 @@
+name: CI (disabled)
+
+# This workflow is intentionally configured to not run on push/pull_request events.
+# It exists so repository-level CI is effectively skipped while keeping a place
+# for future CI workflows if/when we re-enable them.
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  noop:
+    # Always false so the job never runs on push/pull_request
+    if: false
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: echo "CI is disabled for this repository."
+
+

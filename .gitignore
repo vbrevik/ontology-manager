@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+target
+.DS_Store
+coverage
+.idea
+.vscode
+*.log

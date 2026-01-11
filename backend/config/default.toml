@@ -1,0 +1,12 @@
+database_url = "postgres://app:app_password@localhost:5301/app_db"
+jwt_secret = "your-secret-key-here-change-in-production"
+jwt_expiry = 3600
+refresh_token_expiry = 86400
+
+# JWT key placeholders (kept top-level to match `Config` struct)
+jwt_private_key = ""
+jwt_public_key = ""
+
+[server]
+port = 5300
+ 
