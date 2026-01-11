@@ -1,49 +1,36 @@
-use axum::{routing::get, Json, Router, extract::State};
-use serde::Serialize;
+use axum::{
+    routing::get,
+    Json, Router, extract::State,
+    http::StatusCode,
+};
 
-use crate::features::auth::service::AuthService;
-use crate::features::auth::service::AuthError;
+use super::service::DashboardService;
+use super::models::{DashboardStats, ActivityEntry, AdminDashboardStats};
 
-pub fn dashboard_routes() -> Router<AuthService> {
+pub fn dashboard_routes() -> Router<DashboardService> {
     Router::new()
         .route("/stats", get(stats_handler))
         .route("/activity", get(activity_handler))
+        .route("/admin-stats", get(admin_stats_handler))
 }
 
-#[derive(Serialize)]
-struct Stats {
-    total_users: i64,
-    active_refresh_tokens: i64,
+async fn stats_handler(State(service): State<DashboardService>) -> Result<Json<DashboardStats>, (StatusCode, String)> {
+    match service.get_dashboard_stats().await {
+        Ok(stats) => Ok(Json(stats)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+    }
 }
 
-#[derive(Serialize)]
-struct ActivityEntry {
-    id: String,
-    username: String,
-    email: String,
-    created_at: String,
+async fn activity_handler(State(service): State<DashboardService>) -> Result<Json<Vec<ActivityEntry>>, (StatusCode, String)> {
+    match service.get_recent_activity(10).await {
+        Ok(activity) => Ok(Json(activity)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+    }
 }
 
-async fn stats_handler(State(auth_service): State<AuthService>) -> Result<Json<Stats>, AuthError> {
-    let total = auth_service.count_users().await?;
-    let active_tokens = auth_service.count_active_refresh_tokens().await?;
-    Ok(Json(Stats {
-        total_users: total,
-        active_refresh_tokens: active_tokens,
-    }))
+async fn admin_stats_handler(State(service): State<DashboardService>) -> Result<Json<AdminDashboardStats>, (StatusCode, String)> {
+    match service.get_admin_stats().await {
+        Ok(stats) => Ok(Json(stats)),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+    }
 }
-
-async fn activity_handler(State(auth_service): State<AuthService>) -> Result<Json<Vec<ActivityEntry>>, AuthError> {
-    let users = auth_service.recent_users(10).await?;
-
-    let activities: Vec<ActivityEntry> = users.into_iter().map(|r| ActivityEntry {
-        id: r.id.to_string(),
-        username: r.username,
-        email: r.email,
-        created_at: r.created_at.to_rfc3339(),
-    }).collect();
-
-    Ok(Json(activities))
-}
-
-

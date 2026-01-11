@@ -1,5 +1,5 @@
 pub mod routes;
+pub mod service;
+pub mod models;
 
-pub use routes::dashboard_routes;
-
-
+pub use service::DashboardService;

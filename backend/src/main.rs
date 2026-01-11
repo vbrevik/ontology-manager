@@ -94,11 +94,13 @@ async fn main() {
     let abac_service = features::abac::AbacService::new(pool.clone(), rebac_service.clone());
     let user_service = features::users::service::UserService::new(pool.clone(), audit_service.clone());
     let auth_service = features::auth::service::AuthService::new(pool.clone(), config.clone(), abac_service.clone(), user_service.clone(), audit_service.clone());
-    let system_service = features::system::service::SystemService::new();
+    let system_service = features::system::service::SystemService::new(pool.clone(), audit_service.clone());
     let discovery_service = features::discovery::service::DiscoveryService::new();
+    let dashboard_service = features::dashboard::service::DashboardService::new(pool.clone());
     let rate_limit_service = Arc::new(features::rate_limit::RateLimitService::new(pool.clone(), false));
     let ontology_service = features::ontology::OntologyService::new(pool.clone(), audit_service.clone());
     let policy_service = features::rebac::PolicyService::new(pool.clone());
+    let api_management_service = features::api_management::ApiManagementService::new(pool.clone());
     
     // AI Service - Default to docker service name if not set
     let ai_url = std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://llm:11434/v1".to_string());
@@ -133,6 +135,7 @@ async fn main() {
         )
         .merge(
             features::dashboard::routes::dashboard_routes()
+                .with_state(dashboard_service)
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf))
         )
@@ -169,6 +172,12 @@ async fn main() {
         .nest("/rebac/policies",
             features::rebac::policy_routes::policy_routes()
                 .with_state(policy_service)
+                .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf))
+        )
+        .nest("/api-management",
+            features::api_management::routes::api_management_routes()
+                .with_state(api_management_service)
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf))
         )

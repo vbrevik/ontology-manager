@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -15,107 +15,86 @@ import {
     ShieldAlert,
     CheckCircle2,
     Globe,
-    Activity
+    Activity,
+    Loader2
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import {
+    fetchApiKeys,
+    createApiKey,
+    revokeApiKey,
+    fetchWebhooks,
+    type ApiKey,
+    type WebhookEndpoint
+} from '@/features/api-management/lib/api'
 
 export const Route = createFileRoute('/api-management')({
     component: ApiManagementPage,
 })
 
-type ApiKey = {
-    id: string
-    name: string
-    prefix: string
-    createdAt: string
-    lastUsed?: string
-    status: 'active' | 'revoked'
-    scopes: string[]
-}
-
-type WebhookEndpoint = {
-    id: string
-    url: string
-    events: string[]
-    status: 'active' | 'inactive' | 'failing'
-    lastDelivery?: string
-    failureCount: number
-}
-
-const MOCK_KEYS: ApiKey[] = [
-    {
-        id: '1',
-        name: 'Production Server',
-        prefix: 'pk_live_...',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
-        lastUsed: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        status: 'active',
-        scopes: ['read:users', 'write:logs']
-    },
-    {
-        id: '2',
-        name: 'Development Test',
-        prefix: 'pk_test_...',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
-        status: 'active',
-        scopes: ['read:*', 'write:*']
-    },
-    {
-        id: '3',
-        name: 'Legacy Integration',
-        prefix: 'pk_live_...',
-        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90).toISOString(),
-        lastUsed: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
-        status: 'revoked',
-        scopes: ['read:users']
-    }
-]
-
-const MOCK_WEBHOOKS: WebhookEndpoint[] = [
-    {
-        id: '1',
-        url: 'https://api.example.com/webhooks/users',
-        events: ['user.created', 'user.updated'],
-        status: 'active',
-        lastDelivery: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-        failureCount: 0
-    },
-    {
-        id: '2',
-        url: 'https://monitoring.internal/alerts',
-        events: ['system.alert', 'security.breach'],
-        status: 'failing',
-        lastDelivery: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        failureCount: 5
-    }
-]
-
 function ApiManagementPage() {
-    const [keys, setKeys] = useState<ApiKey[]>(MOCK_KEYS)
-    const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>(MOCK_WEBHOOKS)
+    const [keys, setKeys] = useState<ApiKey[]>([])
+    const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([])
+    const [isLoadingKeys, setIsLoadingKeys] = useState(true)
+    const [isLoadingWebhooks, setIsLoadingWebhooks] = useState(true)
     const [newKeyName, setNewKeyName] = useState('')
     const [showNewKeyDialog, setShowNewKeyDialog] = useState(false)
     const [generatedKey, setGeneratedKey] = useState<string | null>(null)
+    const [isCreatingKey, setIsCreatingKey] = useState(false)
 
-    const handleCreateKey = () => {
-        const newKey: ApiKey = {
-            id: String(keys.length + 1),
-            name: newKeyName,
-            prefix: 'pk_live_' + Math.random().toString(36).substring(7),
-            createdAt: new Date().toISOString(),
-            status: 'active',
-            scopes: ['read:*']
+    const loadKeys = async () => {
+        setIsLoadingKeys(true)
+        try {
+            const data = await fetchApiKeys()
+            setKeys(data)
+        } catch (e) {
+            console.error("Failed to load keys", e)
+        } finally {
+            setIsLoadingKeys(false)
         }
-        setKeys([newKey, ...keys])
-        setGeneratedKey(`${newKey.prefix}${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`)
-        setNewKeyName('')
     }
 
-    const handleRevokeKey = (id: string) => {
-        setKeys(keys.map(k => k.id === id ? { ...k, status: 'revoked' } : k))
+    const loadWebhooks = async () => {
+        setIsLoadingWebhooks(true)
+        try {
+            const data = await fetchWebhooks()
+            setWebhooks(data)
+        } catch (e) {
+            console.error("Failed to load webhooks", e)
+        } finally {
+            setIsLoadingWebhooks(false)
+        }
+    }
+
+    useEffect(() => {
+        loadKeys()
+        loadWebhooks()
+    }, [])
+
+    const handleCreateKey = async () => {
+        setIsCreatingKey(true)
+        try {
+            const result = await createApiKey(newKeyName)
+            setGeneratedKey(result.secret)
+            await loadKeys()
+            setNewKeyName('')
+        } catch (e) {
+            console.error("Failed to create key", e)
+        } finally {
+            setIsCreatingKey(false)
+        }
+    }
+
+    const handleRevokeKey = async (id: string) => {
+        try {
+            await revokeApiKey(id)
+            await loadKeys()
+        } catch (e) {
+            console.error("Failed to revoke key", e)
+        }
     }
 
     const copyToClipboard = (text: string) => {
@@ -154,7 +133,10 @@ function ApiManagementPage() {
                                     <CardTitle>Active API Keys</CardTitle>
                                     <CardDescription>Keys used to authenticate requests to the API</CardDescription>
                                 </div>
-                                <Dialog open={showNewKeyDialog} onOpenChange={setShowNewKeyDialog}>
+                                <Dialog open={showNewKeyDialog} onOpenChange={(open) => {
+                                    if (!open) setGeneratedKey(null)
+                                    setShowNewKeyDialog(open)
+                                }}>
                                     <DialogTrigger asChild>
                                         <Button className="bg-indigo-600 hover:bg-indigo-700">
                                             <Plus className="mr-2 h-4 w-4" /> Create New Key
@@ -199,7 +181,10 @@ function ApiManagementPage() {
 
                                         <DialogFooter>
                                             {!generatedKey ? (
-                                                <Button onClick={handleCreateKey} disabled={!newKeyName}>Generate Key</Button>
+                                                <Button onClick={handleCreateKey} disabled={!newKeyName || isCreatingKey}>
+                                                    {isCreatingKey && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Generate Key
+                                                </Button>
                                             ) : (
                                                 <Button onClick={() => {
                                                     setShowNewKeyDialog(false)
@@ -213,47 +198,53 @@ function ApiManagementPage() {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-border/40">
-                                {keys.map((key) => (
-                                    <div key={key.id} className={cn(
-                                        "p-6 flex items-start justify-between transition-colors",
-                                        key.status === 'revoked' ? "opacity-60 bg-muted/20" : "hover:bg-muted/10"
-                                    )}>
-                                        <div className="space-y-1">
-                                            <div className="flex items-center space-x-3">
-                                                <h3 className="font-bold text-sm flex items-center">
-                                                    {key.name}
-                                                    {key.status === 'revoked' && (
-                                                        <Badge variant="destructive" className="ml-2 text-[10px] h-5">REVOKED</Badge>
-                                                    )}
-                                                </h3>
-                                                <code className="text-xs bg-muted/50 px-2 py-0.5 rounded text-muted-foreground font-mono">
-                                                    {key.prefix}****************
-                                                </code>
+                                {isLoadingKeys ? (
+                                    <div className="p-8 text-center text-muted-foreground">Loading API keys...</div>
+                                ) : keys.length === 0 ? (
+                                    <div className="p-8 text-center text-muted-foreground">No API keys found</div>
+                                ) : (
+                                    keys.map((key) => (
+                                        <div key={key.id} className={cn(
+                                            "p-6 flex items-start justify-between transition-colors",
+                                            key.status === 'revoked' ? "opacity-60 bg-muted/20" : "hover:bg-muted/10"
+                                        )}>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center space-x-3">
+                                                    <h3 className="font-bold text-sm flex items-center">
+                                                        {key.name}
+                                                        {key.status === 'revoked' && (
+                                                            <Badge variant="destructive" className="ml-2 text-[10px] h-5">REVOKED</Badge>
+                                                        )}
+                                                    </h3>
+                                                    <code className="text-xs bg-muted/50 px-2 py-0.5 rounded text-muted-foreground font-mono">
+                                                        {key.prefix}****************
+                                                    </code>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Created {new Date(key.createdAt).toLocaleDateString()}
+                                                    {key.lastUsed && ` · Last used ${new Date(key.lastUsed).toLocaleDateString()}`}
+                                                </p>
+                                                <div className="flex gap-2 mt-2">
+                                                    {key.scopes.map(scope => (
+                                                        <Badge key={scope} variant="secondary" className="text-[10px] bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
+                                                            {scope}
+                                                        </Badge>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                Created {new Date(key.createdAt).toLocaleDateString()}
-                                                {key.lastUsed && ` · Last used ${new Date(key.lastUsed).toLocaleDateString()}`}
-                                            </p>
-                                            <div className="flex gap-2 mt-2">
-                                                {key.scopes.map(scope => (
-                                                    <Badge key={scope} variant="secondary" className="text-[10px] bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 border-indigo-500/20">
-                                                        {scope}
-                                                    </Badge>
-                                                ))}
-                                            </div>
+                                            {key.status === 'active' && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                                    onClick={() => handleRevokeKey(key.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" /> Revoke
+                                                </Button>
+                                            )}
                                         </div>
-                                        {key.status === 'active' && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
-                                                onClick={() => handleRevokeKey(key.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4 mr-2" /> Revoke
-                                            </Button>
-                                        )}
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -274,60 +265,66 @@ function ApiManagementPage() {
                         </CardHeader>
                         <CardContent className="p-0">
                             <div className="divide-y divide-border/40">
-                                {webhooks.map((webhook) => (
-                                    <div key={webhook.id} className="p-6">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div className="flex items-center space-x-3">
-                                                <div className={cn(
-                                                    "p-2 rounded-lg",
-                                                    webhook.status === 'active' ? "bg-green-500/10 text-green-600" :
-                                                        webhook.status === 'failing' ? "bg-red-500/10 text-red-600" :
-                                                            "bg-muted text-muted-foreground"
-                                                )}>
-                                                    <Globe className="h-5 w-5" />
+                                {isLoadingWebhooks ? (
+                                    <div className="p-8 text-center text-muted-foreground">Loading webhooks...</div>
+                                ) : webhooks.length === 0 ? (
+                                    <div className="p-8 text-center text-muted-foreground">No webhook endpoints found</div>
+                                ) : (
+                                    webhooks.map((webhook) => (
+                                        <div key={webhook.id} className="p-6">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className={cn(
+                                                        "p-2 rounded-lg",
+                                                        webhook.status === 'active' ? "bg-green-500/10 text-green-600" :
+                                                            webhook.status === 'failing' ? "bg-red-500/10 text-red-600" :
+                                                                "bg-muted text-muted-foreground"
+                                                    )}>
+                                                        <Globe className="h-5 w-5" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center space-x-2">
+                                                            <h3 className="font-bold text-sm font-mono">{webhook.url}</h3>
+                                                            {webhook.status === 'failing' && (
+                                                                <Badge variant="destructive" className="text-[10px]">Failing</Badge>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex items-center space-x-2 mt-1">
+                                                            {webhook.events.map(event => (
+                                                                <Badge key={event} variant="outline" className="text-[10px]">
+                                                                    {event}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="flex items-center space-x-2">
-                                                        <h3 className="font-bold text-sm font-mono">{webhook.url}</h3>
-                                                        {webhook.status === 'failing' && (
-                                                            <Badge variant="destructive" className="text-[10px]">Failing</Badge>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex items-center space-x-2 mt-1">
-                                                        {webhook.events.map(event => (
-                                                            <Badge key={event} variant="outline" className="text-[10px]">
-                                                                {event}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <Button size="icon" variant="ghost">
+                                                        <RefreshCw className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Button size="icon" variant="ghost">
-                                                    <RefreshCw className="h-4 w-4" />
-                                                </Button>
-                                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-600">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+
+                                            {webhook.status === 'failing' && (
+                                                <Alert variant="destructive" className="mt-2 bg-red-500/5 border-red-500/20">
+                                                    <ShieldAlert className="h-4 w-4" />
+                                                    <AlertTitle>Delivery Failed</AlertTitle>
+                                                    <AlertDescription>
+                                                        Last {webhook.failureCount} delivery attempts failed. Recent error: Connection refused.
+                                                    </AlertDescription>
+                                                </Alert>
+                                            )}
+
+                                            <div className="flex items-center space-x-2 text-xs text-muted-foreground mt-2">
+                                                <Activity className="h-3 w-3" />
+                                                <span>Last delivery: {webhook.lastDelivery ? new Date(webhook.lastDelivery).toLocaleString() : 'Never'}</span>
                                             </div>
                                         </div>
-
-                                        {webhook.status === 'failing' && (
-                                            <Alert variant="destructive" className="mt-2 bg-red-500/5 border-red-500/20">
-                                                <ShieldAlert className="h-4 w-4" />
-                                                <AlertTitle>Delivery Failed</AlertTitle>
-                                                <AlertDescription>
-                                                    Last {webhook.failureCount} delivery attempts failed. Recent error: Connection refused.
-                                                </AlertDescription>
-                                            </Alert>
-                                        )}
-
-                                        <div className="flex items-center space-x-2 text-xs text-muted-foreground mt-2">
-                                            <Activity className="h-3 w-3" />
-                                            <span>Last delivery: {new Date(webhook.lastDelivery!).toLocaleString()}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </CardContent>
                     </Card>

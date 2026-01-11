@@ -1,92 +1,100 @@
-# Context7 MCP Server Installation Guide
+# Ontology Manager
 
-This guide provides instructions for installing and configuring the Context7 MCP server for Cline.
+A comprehensive Graph Security & Ontology Management platform designed to define, secure, and manage data hierarchies with fine-grained access control (ABAC/ReBAC).
 
-## Prerequisites
+## 🚀 Overview
 
-- Cline installed
-- Node.js (v16 or later)
-- npm or yarn
+Ontology Manager provides a visual interface and powerful backend engine for modeling complex data domains alongside robust security policies. It unifies:
+- **Ontology Design**: defining classes, properties, and relationships.
+- **Identity & Access Management (IAM)**: Managing users, roles (ABAC), and relationship-based policies (ReBAC).
+- **Security Impact Analysis**: Simulating policy changes and visualizing access graphs.
 
-## Installation Steps
+## 🏗 Architecture
 
-### 1. Install the Context7 MCP Server
+The project is built as a modern full-stack application:
 
-```bash
-npm install -g @context7/mcp-server
+- **Frontend**: 
+  - **Framework**: React 18 (Vite)
+  - **Routing**: TanStack Router (File-based routing)
+  - **Styling**: TailwindCSS & Shadcn UI
+  - **State/Query**: TanStack Query
+- **Backend**:
+  - **Language**: Rust
+  - **Framework**: Axum (High-performance async web framework)
+  - **Database**: PostgreSQL (via SQLx)
+  - **Authentication**: JWT-based stateless auth
+
+## ✨ Key Features
+
+### 1. Ontology Engine
+- **Class Management**: Create and version ontology classes (e.g., *Patient*, *Doctor*, *Appointment*).
+- **Relationship Types**: Define directed edges between classes (e.g., *Treats*, *Owns*, *ReportsTo*).
+- **Graph Explorer**: Visual node-link diagrams to explore the data model.
+
+### 2. Advanced Access Control
+- **ABAC (Attribute-Based Access Control)**: Define roles with granular permissions (e.g., `READ_SENSITIVE` on `PatientRecords`).
+- **ReBAC (Relationship-Based Access Control)**: Define policies like "Users can access documents owned by their Department".
+- **Impact Analysis**: Simulate "What happens if I give Role X to User Y?" before applying changes.
+
+### 3. User & Role Management
+- **Role Designer**: specialized UI for constructing role definitions.
+- **User Management**: Lifecycle management for system users.
+- **Security Dashboard**: Real-time metrics on policy denials, active sessions, and ontology growth.
+
+## 🛠 Getting Started
+
+### Prerequisites
+- **Docker** (for PostgreSQL)
+- **Node.js 20+**
+- **Rust (Stable)**
+
+### Installation
+
+1.  **Database**: Start the PostgreSQL container.
+    ```bash
+    docker-compose up -d db
+    ```
+
+2.  **Backend**:
+    ```bash
+    cd backend
+    cargo run
+    ```
+    The server will start on `http://localhost:5300`. It will automatically run migrations and seed initial system data.
+
+3.  **Frontend**:
+    ```bash
+    cd frontend
+    npm install
+    npm run dev
+    ```
+    Access the UI at `http://localhost:5373`.
+
+## 📦 Project Structure
+
+```
+├── backend/            # Rust Axum API
+│   ├── src/features/   # Domain modules (abac, rebac, ontology, users)
+│   ├── migrations/     # SQLx database migrations
+│   └── config/         # App configuration
+├── frontend/           # React Application
+│   ├── src/routes/     # Page routes (Tanstack Router)
+│   ├── src/features/   # Frontend feature modules
+│   └── src/components/ # Shared UI components
+├── database/           # Docker database context
+└── docker-compose.yml  # Service orchestration
 ```
 
-### 2. Create the MCP Server Directory
+## 🔒 Security
 
-The server executable will be installed globally. You can find its location by running:
+- **Safe Defaults**: All endpoints require authentication unless explicitly public.
+- **CSRF Protection**: Double-submit cookie pattern implemented.
+- **Input Validation**: Strictly typed schemas using Serde (Backend) and Zod (Frontend).
 
-```bash
-which context7-mcp-server
-```
+## 🤝 Contributing
 
-### 3. Configure Cline
-
-Edit your `cline_mcp_settings.json` file (created in this directory) to point to the installed server:
-
-```json
-{
-  "mcpServers": {
-    "context7": {
-      "command": "/path/to/context7-mcp-server",
-      "args": ["--api-key", "YOUR_CONTEXT7_API_KEY"],
-      "env": {
-        "CONTEXT7_API_KEY": "YOUR_CONTEXT7_API_KEY"
-      }
-    }
-  }
-}
-```
-
-Replace `/path/to/context7-mcp-server` with the actual path from step 1.
-
-### 4. Get Your Context7 API Key
-
-1. Sign up for a Context7 account at https://context7.ai
-2. Go to your account settings
-3. Generate an API key
-
-### 5. Update the Configuration
-
-Replace `YOUR_CONTEXT7_API_KEY` in the `cline_mcp_settings.json` file with your actual API key.
-
-## Usage
-
-Once configured, you can use the Context7 MCP server in Cline to:
-
-- Search for products and recommendations
-- Get personalized suggestions based on your browsing history
-- Access Context7's AI-powered commerce features
-
-## Troubleshooting
-
-If the server doesn't start:
-
-1. Verify Node.js is installed: `node -v`
-2. Verify the server is installed: `which context7-mcp-server`
-3. Check the server logs for errors
-
-## Server Capabilities
-
-The Context7 MCP server provides the following tools:
-
-- `get_recommendations`: Get personalized product recommendations
-- `search_products`: Search for products in the Context7 catalog
-- `get_product_details`: Get detailed information about a specific product
-- `track_event`: Track user events for personalization
-
-## Local end-to-end tests (Playwright)
-
-This repository includes Playwright E2E tests that exercise the frontend <-> backend integration locally.
-
-Run locally:
-
-- Start backend: `cd backend && cargo run`
-- Start frontend: `cd frontend && npm run dev`
-- Run tests: `cd frontend && npx playwright test`
-
-Note: per your request, CI for E2E tests is intentionally skipped — these tests are intended for local developer validation only. See `docs/e2e.md` for additional details.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request

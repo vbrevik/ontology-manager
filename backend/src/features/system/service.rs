@@ -1,16 +1,23 @@
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use sysinfo::{System, Disks, Networks};
+use sqlx::PgPool;
+use uuid::Uuid;
+use chrono::Utc;
 
-use super::models::{SystemMetricsResponse, CpuMetrics, LoadAvg, MemoryMetrics, DiskMetrics, NetworkMetrics};
+use super::models::{SystemMetricsResponse, CpuMetrics, LoadAvg, MemoryMetrics, DiskMetrics, NetworkMetrics, GeneratedReport};
+use super::audit_service::AuditService;
+use crate::features::auth::models::AuditLog;
 
 #[derive(Clone)]
 pub struct SystemService {
     metrics_cache: Arc<RwLock<SystemMetricsResponse>>,
+    pool: PgPool,
+    audit_service: AuditService,
 }
 
 impl SystemService {
-    pub fn new() -> Self {
+    pub fn new(pool: PgPool, audit_service: AuditService) -> Self {
         // Initial empty state
         let initial_metrics = SystemMetricsResponse {
             status: "initializing".to_string(),
@@ -38,11 +45,6 @@ impl SystemService {
                 sys.refresh_all();
                 disks.refresh(true);
                 networks.refresh(true);
-                // Actually Disks::refresh_list() updates the list of disks. 
-                // Disks::refresh() isn't a method on list?
-                // Let's assume refreshing the list is enough to get usage? 
-                // Usually we refresh specific disks.
-                // But new_with_refreshed_list implies it gets everything.
                 
                 // Host info
                 let hostname = System::host_name().unwrap_or_else(|| "unknown".to_string());
@@ -52,7 +54,6 @@ impl SystemService {
                 let uptime = System::uptime();
 
                 // CPU
-                // Try iterating cores if global isn't available or easy
                 let cpus = sys.cpus();
                 let cores = cpus.len();
                 let cpu_usage_global = if cores > 0 {
@@ -140,10 +141,49 @@ impl SystemService {
 
         Self {
             metrics_cache,
+            pool,
+            audit_service,
         }
     }
 
     pub fn get_metrics(&self) -> SystemMetricsResponse {
         self.metrics_cache.read().unwrap().clone()
+    }
+
+    pub async fn get_logs(&self) -> Result<Vec<AuditLog>, String> {
+        self.audit_service.get_logs().await.map_err(|e| e.to_string())
+    }
+
+    pub async fn get_reports(&self) -> Result<Vec<GeneratedReport>, String> {
+        let reports = sqlx::query_as::<_, GeneratedReport>(
+            "SELECT * FROM generated_reports ORDER BY generated_at DESC"
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(reports)
+    }
+
+    pub async fn generate_report(&self, report_type: String) -> Result<GeneratedReport, String> {
+        // For MVP, we just create a record saying it is completed.
+        // In real system, this would trigger a background job.
+        
+        let report = sqlx::query_as::<_, GeneratedReport>(
+            r#"
+            INSERT INTO generated_reports (name, report_type, status, size_bytes, generated_at)
+            VALUES ($1, $2, 'COMPLETED', $3, $4)
+            RETURNING *
+            "#
+        )
+        .bind(format!("{} Report", report_type))
+        .bind(report_type)
+        .bind(1024_i64) // Mock size
+        .bind(Utc::now())
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| e.to_string())?;
+
+        Ok(report)
     }
 }

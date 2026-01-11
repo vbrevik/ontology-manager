@@ -8,3 +8,4 @@ pub mod rate_limit;
 pub mod ontology;
 pub mod rebac;
 pub mod ai;
+pub mod api_management;

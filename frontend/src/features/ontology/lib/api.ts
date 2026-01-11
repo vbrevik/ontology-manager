@@ -203,9 +203,10 @@ export interface RolePermissionMapping {
 export async function fetchRoles(): Promise<Role[]> {
     try {
         const res = await fetch('/api/abac/roles'); // Reusing existing role endpoint
-        if (!res.ok) throw new Error('Failed to fetch roles');
+        if (!res.ok) throw new Error(`Failed to fetch roles: ${res.status} ${res.statusText}`);
         return await res.json();
     } catch (e) {
+        console.error('Fetch Roles Error:', e);
         console.warn('Backend roles API not available, using mock data.');
         return [
             { id: 'r1', name: 'Admin', description: 'System Administrator', created_at: new Date().toISOString() },
@@ -218,9 +219,10 @@ export async function fetchRoles(): Promise<Role[]> {
 export async function fetchRolePermissionMappings(roleId: string): Promise<RolePermissionMapping[]> {
     try {
         const res = await fetch(`/api/rebac/roles/${roleId}/permission-mappings`);
-        if (!res.ok) throw new Error('Failed to fetch role permission mappings');
+        if (!res.ok) throw new Error(`Failed to fetch role permission mappings: ${res.status} ${res.statusText}`);
         return await res.json();
     } catch (e) {
+        console.error('Fetch Role Mappings Error:', e);
         console.warn('Backend role-permission-mappings API not available, using mock data.');
         // Return some random mappings for demo
         if (roleId === 'r1') { // Admin

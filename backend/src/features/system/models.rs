@@ -1,4 +1,6 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemMetricsResponse {
@@ -48,4 +50,21 @@ pub struct DiskMetrics {
 pub struct NetworkMetrics {
     pub received_bytes: u64,
     pub transmitted_bytes: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct GeneratedReport {
+    pub id: Uuid,
+    pub name: String,
+    pub report_type: String,
+    pub status: String,
+    pub file_url: Option<String>,
+    pub size_bytes: Option<i64>,
+    pub generated_at: DateTime<Utc>,
+    pub created_by: Option<Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateReportRequest {
+    pub report_type: String, // ACCESS_AUDIT, USER_ACTIVITY, etc.
 }

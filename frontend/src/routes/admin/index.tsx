@@ -1,4 +1,5 @@
 import { useNavigate, createFileRoute } from "@tanstack/react-router"
+import { useEffect, useState } from "react";
 import {
     Card,
     CardContent,
@@ -13,7 +14,8 @@ import {
     Zap,
     Lock,
     Globe,
-    ShieldAlert
+    ShieldAlert,
+    Loader2
 } from "lucide-react"
 import {
     BarChart,
@@ -31,10 +33,46 @@ export const Route = createFileRoute('/admin/')({
     component: AdminDashboard,
 })
 
+interface AdminStats {
+    total_users: number;
+    user_growth: number;
+    active_roles: number;
+    role_growth: number;
+    ontology_classes: number;
+    class_growth: number;
+    policy_denials: number;
+    denial_growth: number;
+    access_traffic: { name: string; access: number; denies: number }[];
+}
+
 function AdminDashboard() {
     const navigate = useNavigate()
     const { hasRole } = useAbac();
     const isAdmin = hasRole('superadmin') || hasRole('admin');
+    const [stats, setStats] = useState<AdminStats | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!isAdmin) return;
+
+        const fetchStats = async () => {
+            try {
+                const res = await fetch('/api/admin-stats');
+                if (res.ok) {
+                    const data = await res.json();
+                    setStats(data);
+                } else {
+                    console.error("Failed to fetch admin stats");
+                }
+            } catch (e) {
+                console.error("Error fetching admin stats", e);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, [isAdmin]);
 
     if (!isAdmin) {
         return (
@@ -50,46 +88,46 @@ function AdminDashboard() {
         );
     }
 
-    const stats = [
+    if (isLoading) {
+        return (
+            <div className="p-8 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        )
+    }
+
+    const statCards = [
         {
             title: "Total Users",
-            value: "2,543",
-            change: "+12.5%",
+            value: stats?.total_users.toLocaleString() || "0",
+            change: `${stats?.user_growth.toFixed(1)}%`,
             icon: Users,
-            trend: "up"
+            trend: (stats?.user_growth || 0) >= 0 ? "up" : "down"
         },
         {
             title: "Active Roles",
-            value: "14",
-            change: "+2",
+            value: stats?.active_roles.toLocaleString() || "0",
+            change: `${stats?.role_growth.toFixed(1)}%`,
             icon: Shield,
-            trend: "neutral"
+            trend: (stats?.role_growth || 0) >= 0 ? "up" : "down"
         },
         {
             title: "Ontology Classes",
-            value: "148",
-            change: "+24.3%",
+            value: stats?.ontology_classes.toLocaleString() || "0",
+            change: `${stats?.class_growth.toFixed(1)}%`,
             icon: Globe,
-            trend: "up"
+            trend: (stats?.class_growth || 0) >= 0 ? "up" : "down"
         },
         {
             title: "Policy Denials",
-            value: "54",
-            change: "-4.5%",
+            value: stats?.policy_denials.toLocaleString() || "0",
+            change: `${stats?.denial_growth.toFixed(1)}%`,
             icon: Lock,
-            trend: "down"
+            trend: (stats?.denial_growth || 0) <= 0 ? "up" : "down" // fewer denials is "up" (good)? Or just direction. Let's keep direction.
         }
     ]
 
-    const data = [
-        { name: 'Mon', access: 400, denies: 24 },
-        { name: 'Tue', access: 300, denies: 13 },
-        { name: 'Wed', access: 200, denies: 58 },
-        { name: 'Thu', access: 278, denies: 39 },
-        { name: 'Fri', access: 189, denies: 48 },
-        { name: 'Sat', access: 239, denies: 38 },
-        { name: 'Sun', access: 349, denies: 43 },
-    ];
+
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -110,7 +148,7 @@ function AdminDashboard() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat, i) => (
+                {statCards.map((stat, i) => (
                     <Card key={i} className="hover:shadow-lg transition-all duration-300 border-border/50 bg-background/50 backdrop-blur-sm">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">
@@ -140,7 +178,7 @@ function AdminDashboard() {
                     <CardContent className="pl-2">
                         <div className="h-[300px] w-full">
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                                <BarChart data={data}>
+                                <BarChart data={stats?.access_traffic || []}>
                                     <XAxis
                                         dataKey="name"
                                         stroke="#888888"

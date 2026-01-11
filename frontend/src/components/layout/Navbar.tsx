@@ -60,8 +60,8 @@ export function Navbar() {
                         <Terminal size={18} />
                     </div>
                     <div className="flex flex-col">
-                        <span className="tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text leading-tight">Platform</span>
-                        <span className="text-[10px] text-muted-foreground font-normal leading-none">v{import.meta.env.PACKAGE_VERSION || '0.1.1'}</span>
+                        <span className="tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text leading-tight">Ontology manager</span>
+                        <span className="text-[10px] text-muted-foreground font-normal leading-none">v{import.meta.env.PACKAGE_VERSION || '0.2.0'}</span>
                     </div>
                 </Link>
             </div>

@@ -9,7 +9,7 @@ type StatsResponse = {
 }
 
 type ActivityEntry = {
-  id: number
+  id: string
   username: string
   email: string
   created_at: string

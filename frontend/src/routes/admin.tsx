@@ -11,8 +11,9 @@ export const Route = createFileRoute('/admin')({
 function AdminLayout() {
     const location = useLocation();
     const isAccessRoute = location.pathname.startsWith('/admin/access');
+    const isOntologyRoute = location.pathname.startsWith('/admin/ontology');
 
-    const navItems = [
+    const accessNav = [
         { title: "Explorer", href: "/admin/access/explorer", icon: Eye },
         { title: "Roles", href: "/admin/access/roles", icon: Users },
         { title: "Policies", href: "/admin/access/policies", icon: Terminal },
@@ -20,6 +21,15 @@ function AdminLayout() {
         { title: "Matrix", href: "/admin/access/matrix", icon: LayoutGrid },
         { title: "Impact", href: "/admin/access/impact", icon: ShieldAlert },
     ];
+
+    const ontologyNav = [
+        { title: "Overview", href: "/admin/ontology", icon: Eye },
+        { title: "Classes", href: "/admin/ontology/Classes", icon: LayoutGrid },
+        { title: "Relationships", href: "/admin/ontology/Relationships", icon: Terminal },
+        { title: "Versions", href: "/admin/ontology/versions", icon: Key },
+    ];
+
+    const navItems = isAccessRoute ? accessNav : (isOntologyRoute ? ontologyNav : []);
 
     return (
         <div className="flex bg-muted/10 min-h-screen">
@@ -29,15 +39,15 @@ function AdminLayout() {
                     <div className="flex items-center space-x-8">
                         <h1 className={cn(
                             "text-xl font-bold tracking-tight transition-all duration-300",
-                            isAccessRoute ? "text-indigo-500" : "text-foreground"
+                            isAccessRoute ? "text-indigo-500" : (isOntologyRoute ? "text-orange-500" : "text-foreground")
                         )}>
-                            {isAccessRoute ? "Graph Security" : "Admin Console"}
+                            {isAccessRoute ? "Graph Security" : (isOntologyRoute ? "Graph Ontology" : "Admin Console")}
                         </h1>
 
-                        {isAccessRoute && (
+                        {(isAccessRoute || isOntologyRoute) && (
                             <nav className="hidden xl:flex items-center p-1 bg-muted/30 backdrop-blur-sm rounded-xl border border-border/40 shadow-inner">
                                 {navItems.map((item) => {
-                                    const isActive = location.pathname.startsWith(item.href);
+                                    const isActive = location.pathname === item.href || (item.href !== "/admin/ontology" && location.pathname.startsWith(item.href));
                                     return (
                                         <Link
                                             key={item.href}
