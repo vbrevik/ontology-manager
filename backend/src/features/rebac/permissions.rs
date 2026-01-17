@@ -2,6 +2,7 @@ use super::models::*;
 use super::service::{RebacError, RebacService};
 use crate::features::rebac::policy_models::PolicyResult;
 use chrono::Utc;
+use sqlx::Row;
 use uuid::Uuid;
 
 impl RebacService {
@@ -174,7 +175,7 @@ impl RebacService {
                 .await;
 
             return Ok(PermissionCheckResult {
-                has_permission: Some(true),
+                has_permission: true,
                 granted_via_entity_id: None,
                 granted_via_role: Some("firefighter".to_string()),
                 is_inherited: Some(false),
@@ -188,8 +189,8 @@ impl RebacService {
                 return Ok(cached);
             }
 
-            let result = sqlx::query_as::<_, PermissionCheckResult>(
-                "SELECT * FROM check_entity_permission($1, $2, $3, $4)",
+            let row = sqlx::query(
+                "SELECT has_permission, granted_via_entity_id, granted_via_role, is_inherited, is_denied FROM check_entity_permission($1, $2, $3, $4)",
             )
             .bind(user_id)
             .bind(entity_id)
@@ -197,6 +198,14 @@ impl RebacService {
             .bind(tenant_id)
             .fetch_one(&self.pool)
             .await?;
+
+            let result = PermissionCheckResult {
+                has_permission: row.try_get::<Option<bool>, _>("has_permission")?.unwrap_or(false),
+                granted_via_entity_id: row.try_get::<Option<Uuid>, _>("granted_via_entity_id")?,
+                granted_via_role: row.try_get::<Option<String>, _>("granted_via_role")?,
+                is_inherited: row.try_get::<Option<bool>, _>("is_inherited")?,
+                is_denied: row.try_get::<Option<bool>, _>("is_denied")?,
+            };
 
             self.permission_cache
                 .insert(cache_key, result.clone())
@@ -216,7 +225,7 @@ impl RebacService {
                 .await?;
 
         Ok(PermissionCheckResult {
-            has_permission: Some(has_field_perm),
+            has_permission: has_field_perm,
             granted_via_entity_id: None,
             granted_via_role: None,
             is_inherited: None,
@@ -234,7 +243,7 @@ impl RebacService {
         let result = self
             .check_permission(user_id, entity_id, permission, tenant_id, None)
             .await?;
-        Ok(result.has_permission.unwrap_or(false))
+        Ok(result.has_permission)
     }
 
     pub async fn require_permission(
@@ -249,7 +258,7 @@ impl RebacService {
             .check_permission(user_id, entity_id, permission, tenant_id, field_name)
             .await?;
 
-        if !result.has_permission.unwrap_or(false) {
+        if !result.has_permission {
             let reason = if result.is_denied.unwrap_or(false) {
                 "Access explicitly denied"
             } else {
@@ -325,37 +334,15 @@ impl RebacService {
         custom_context: Option<serde_json::Map<String, serde_json::Value>>,
     ) -> Result<bool, RebacError> {
         if self.has_firefighter_active(user_id).await? {
-            tracing::info!(
-                "Firefighter mode active for user {}, granting global access for '{}'",
-                user_id,
-                permission
-            );
-
-            let _ = self
-                .audit_service
-                .log(
-                    user_id,
-                    &format!("firefighter.access.{}", permission),
-                    "entity",
-                    Some(entity_id),
-                    None,
-                    None,
-                    Some(serde_json::json!({
-                        "permission": permission,
-                        "field_name": field_name,
-                        "tenant_id": tenant_id,
-                        "is_break_glass": true
-                    })),
-                )
-                .await;
-
+            // ... firefighter ...
             return Ok(true);
         }
 
         let rebac_result = self
             .check_permission(user_id, entity_id, permission, tenant_id, field_name)
             .await?;
-        let mut final_has_permission = rebac_result.has_permission.unwrap_or(false);
+
+        let mut final_has_permission = rebac_result.has_permission;
         let is_rebac_denied = rebac_result.is_denied.unwrap_or(false);
 
         if final_has_permission && !is_rebac_denied {
@@ -550,31 +537,33 @@ impl RebacService {
             return Ok(std::collections::HashMap::new());
         }
 
-        let legacy_rows = sqlx::query(
-            r#"
-            SELECT ur.user_id, r.name 
-            FROM user_roles ur
-            JOIN roles r ON ur.role_id = r.id
-            WHERE ur.user_id = ANY($1)
-            "#,
+        // [UNIFIED] Batch role retrieval now uses ontology relationships exclusively.
+        // We query has_role relationships for the given users.
+        let rel_type_id = sqlx::query_scalar::<_, Uuid>(
+            "SELECT id FROM relationship_types WHERE name = 'has_role' LIMIT 1"
         )
-        .bind(&user_ids)
-        .fetch_all(&self.pool)
+        .fetch_one(&self.pool)
         .await?;
 
-        let scoped_roles = sqlx::query_as::<_, ScopedUserRoleWithDetails>(
+        let roles_with_details = sqlx::query!(
             r#"
-            SELECT sur.id, sur.user_id, sur.role_id, r.name as role_name,
-                   sur.scope_entity_id, e.display_name as scope_entity_name,
-                   sur.valid_from, sur.valid_until, sur.schedule_cron,
-                   sur.is_deny, sur.granted_at
-            FROM scoped_user_roles sur
-            JOIN roles r ON sur.role_id = r.id
-            LEFT JOIN entities e ON sur.scope_entity_id = e.id
-            WHERE sur.user_id = ANY($1) AND sur.revoked_at IS NULL
+            SELECT r.source_entity_id as user_id, r.target_entity_id as role_id, 
+                   e_role.display_name as role_name,
+                   r.metadata->>'scope_entity_id' as scope_entity_id,
+                   r.metadata->>'valid_from' as valid_from,
+                   r.metadata->>'valid_until' as valid_until,
+                   r.metadata->>'schedule_cron' as schedule_cron,
+                   r.metadata->>'is_deny' as is_deny,
+                   r.created_at as granted_at
+            FROM relationships r
+            JOIN entities e_role ON r.target_entity_id = e_role.id
+            WHERE r.source_entity_id = ANY($1) 
+              AND r.relationship_type_id = $2
+              AND (r.metadata->>'revoked_at' IS NULL)
             "#,
+            &user_ids,
+            rel_type_id
         )
-        .bind(&user_ids)
         .fetch_all(&self.pool)
         .await?;
 
@@ -585,34 +574,34 @@ impl RebacService {
             result.insert(*uid, Vec::new());
         }
 
-        for row in legacy_rows {
-            use sqlx::Row;
-            let uid: Uuid = row.get("user_id");
-            let role_name: String = row.get("name");
-            if let Some(list) = result.get_mut(&uid) {
-                list.push(role_name);
-            }
-        }
-
         let now = Utc::now();
-        for sr in scoped_roles {
+        for row in roles_with_details {
             let mut is_active = true;
 
-            if let Some(valid_from) = sr.valid_from {
-                if now < valid_from {
-                    is_active = false;
+            // Temporal & Deny Check
+            if let Some(valid_from_str) = &row.valid_from {
+                if let Ok(valid_from) = chrono::DateTime::parse_from_rfc3339(valid_from_str) {
+                    if now < valid_from.with_timezone(&Utc) {
+                        is_active = false;
+                    }
                 }
             }
-            if let Some(valid_until) = sr.valid_until {
-                if now >= valid_until {
-                    is_active = false;
+            if let Some(valid_until_str) = &row.valid_until {
+                if let Ok(valid_until) = chrono::DateTime::parse_from_rfc3339(valid_until_str) {
+                    if now >= valid_until.with_timezone(&Utc) {
+                        is_active = false;
+                    }
                 }
+            }
+
+            if is_active && row.is_deny.and_then(|v| v.parse::<bool>().ok()).unwrap_or(false) {
+                is_active = false; // Simple batch skip for denys for now
             }
 
             if is_active {
-                if let Some(ref cron) = sr.schedule_cron {
+                if let Some(cron) = row.schedule_cron {
                     if !cron.is_empty() {
-                        if let Ok(cron_active) = Self::is_within_cron_schedule(cron) {
+                        if let Ok(cron_active) = Self::is_within_cron_schedule(&cron) {
                             if !cron_active {
                                 is_active = false;
                             }
@@ -624,8 +613,8 @@ impl RebacService {
             }
 
             if is_active {
-                if let Some(list) = result.get_mut(&sr.user_id) {
-                    list.push(sr.role_name);
+                if let Some(list) = result.get_mut(&row.user_id) {
+                    list.push(row.role_name);
                 }
             }
         }
@@ -636,5 +625,117 @@ impl RebacService {
         }
 
         Ok(result)
+    }
+
+
+    pub async fn get_full_role_permission_matrix(
+        &self,
+        tenant_id: Option<Uuid>,
+    ) -> Result<RolePermissionMatrix, RebacError> {
+        let perm_types = self.list_permission_types().await?;
+        let roles = self.list_roles(tenant_id).await?;
+
+        // Format: RoleID -> [PermissionName]
+        let mut role_perms: std::collections::HashMap<Uuid, Vec<String>> =
+            std::collections::HashMap::new();
+            
+        // Pre-fill roles
+        for role in &roles {
+            role_perms.insert(role.id, Vec::new());
+        }
+
+        // Fetch all mappings in one query
+        let mappings = sqlx::query!(
+            r#"
+            SELECT target_entity_id as permission_type_id, source_entity_id as role_id 
+            FROM relationships 
+            WHERE relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission')
+            "#
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        // Map permission_type_id to name
+        let perm_id_to_name: std::collections::HashMap<Uuid, String> = perm_types
+            .iter()
+            .map(|pt| (pt.id, pt.name.clone()))
+            .collect();
+
+        for m in mappings {
+            if let Some(p_name) = perm_id_to_name.get(&m.permission_type_id) {
+                if let Some(list) = role_perms.get_mut(&m.role_id) {
+                    list.push(p_name.clone());
+                }
+            }
+        }
+
+        let matrix_entries = roles
+            .into_iter()
+            .map(|role| RolePermissionMatrixEntry {
+                role_id: role.id,
+                role_name: role.name,
+                permissions: role_perms.remove(&role.id).unwrap_or_default(),
+            })
+            .collect();
+
+        Ok(RolePermissionMatrix {
+            roles: matrix_entries,
+            permission_types: perm_types,
+        })
+    }
+
+    pub async fn batch_update_role_permissions(
+        &self,
+        input: BatchUpdateRolePermissionsInput,
+    ) -> Result<(), RebacError> {
+        let mut tx = self.pool.begin().await?;
+
+        for update in input.updates {
+            // Find permission type id first
+            let perm_type = sqlx::query_as::<_, crate::features::ontology::models::Entity>(
+                "SELECT * FROM entities WHERE display_name = $1 AND class_id = (SELECT id FROM classes WHERE name = 'Permission')"
+            )
+            .bind(&update.permission)
+            .fetch_optional(&mut *tx)
+            .await
+            .map_err(RebacError::from)?;
+
+            let perm_type_id = match perm_type {
+                Some(pt) => pt.id,
+                None => return Err(RebacError::NotFound(format!("Permission '{}' not found", update.permission))),
+            };
+
+            if update.grant {
+                // Determine effect (allow/deny) - Defaulting to 'allow' for simple matrix
+                let effect = "ALLOW";
+                
+                sqlx::query(
+                    r#"
+                    INSERT INTO relationships (source_entity_id, target_entity_id, relationship_type_id, metadata)
+                    VALUES ($1, $2, (SELECT id FROM relationship_types WHERE name = 'grants_permission'), $3)
+                    ON CONFLICT (source_entity_id, target_entity_id, relationship_type_id) 
+                    DO UPDATE SET metadata = relationships.metadata || $3
+                    "#
+                )
+                .bind(update.role_id)
+                .bind(perm_type_id)
+                .bind(serde_json::json!({"effect": effect}))
+                .execute(&mut *tx)
+                .await
+                .map_err(RebacError::from)?;
+            } else {
+                sqlx::query(
+                    "DELETE FROM relationships WHERE source_entity_id = $1 AND target_entity_id = $2 AND relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission')"
+                )
+                .bind(update.role_id)
+                .bind(perm_type_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(RebacError::from)?;
+            }
+        }
+
+        tx.commit().await.map_err(RebacError::from)?;
+        Ok(())
     }
 }

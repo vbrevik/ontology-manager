@@ -28,7 +28,7 @@ impl UserService {
     }
 
     pub async fn find_all(&self) -> Result<Vec<User>, AuthError> {
-        let users = sqlx::query_as::<_, User>("SELECT * FROM users")
+        let users = sqlx::query_as::<_, User>("SELECT * FROM unified_users")
             .fetch_all(&self.pool)
             .await?;
         Ok(users)
@@ -36,7 +36,7 @@ impl UserService {
 
     pub async fn find_by_id(&self, id: &str) -> Result<User, AuthError> {
         let user_uuid = Uuid::parse_str(id).map_err(|_| AuthError::UserNotFound)?;
-        let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        let user = sqlx::query_as::<_, User>("SELECT * FROM unified_users WHERE id = $1")
             .bind(user_uuid)
             .fetch_optional(&self.pool)
             .await?
@@ -58,45 +58,32 @@ impl UserService {
             .map_err(|e| AuthError::PasswordHashError(e.to_string()))?
             .to_string();
 
-        sqlx::query(
-            "INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4)",
+        // Get User class ID
+        let user_class_id = self.ontology_service.get_system_class("User").await
+            .map_err(|e| AuthError::DatabaseError(sqlx::Error::Protocol(e.to_string())))?.id;
+
+        // Insert into entities as primary store
+        let user = sqlx::query_as::<_, User>(
+            r#"
+            WITH inserted AS (
+                INSERT INTO entities (id, class_id, display_name, attributes, approval_status)
+                VALUES ($1, $2, $3, $4, 'APPROVED'::approval_status)
+                RETURNING *
+            )
+            SELECT * FROM unified_users WHERE id = (SELECT id FROM inserted)
+            "#
         )
         .bind(id)
+        .bind(user_class_id)
         .bind(username)
-        .bind(email)
-        .bind(password_hash)
-        .execute(&self.pool)
+        .bind(serde_json::json!({
+            "email": email,
+            "username": username,
+            "password_hash": password_hash,
+            "custom_attributes": {}
+        }))
+        .fetch_one(&self.pool)
         .await?;
-
-        let user = self.find_by_id(&id.to_string()).await?;
-
-        // [DEPRECATED] Technical Debt: Dual-write pattern.
-        // We write to both `users` table and Ontology-based `User` entity.
-        // Future goal: Migrate fully to Ontology-based auth.
-
-        // Create ontology entity for the user
-        if let Ok(user_class) = self.ontology_service.get_system_class("User").await {
-            let _ = self
-                .ontology_service
-                .create_entity(
-                    crate::features::ontology::models::CreateEntityInput {
-                        class_id: user_class.id,
-                        display_name: username.to_string(),
-                        parent_entity_id: None,
-                        attributes: Some(serde_json::json!({
-                            "user_id": id.to_string(),
-                            "username": username,
-                            "email": email,
-                            "last_login_at": null,
-                            "last_login_ip": null,
-                            "custom_attributes": {}
-                        })),
-                    },
-                    performing_user_id,
-                    None,
-                )
-                .await;
-        }
 
         // Log creation
         // ... (audit log code)
@@ -131,63 +118,26 @@ impl UserService {
 
         let user_uuid = Uuid::parse_str(id).map_err(|_| AuthError::UserNotFound)?;
 
-        let mut query_builder: sqlx::QueryBuilder<sqlx::Postgres> =
-            sqlx::QueryBuilder::new("UPDATE users SET ");
-        let mut separated = query_builder.separated(", ");
-
-        if let Some(ref u) = username {
-            separated.push("username = ");
-            separated.push_bind_unseparated(u);
+        // Update ontology attributes
+        let mut updates = serde_json::Map::new();
+        if let Some(u) = username {
+            updates.insert("username".to_string(), serde_json::Value::String(u));
         }
-        if let Some(ref e) = email {
-            separated.push("email = ");
-            separated.push_bind_unseparated(e);
+        if let Some(e) = email {
+            updates.insert("email".to_string(), serde_json::Value::String(e));
         }
 
-        query_builder.push(" WHERE id = ");
-        query_builder.push_bind(user_uuid);
-
-        query_builder.build().execute(&self.pool).await?;
+        if !updates.is_empty() {
+             sqlx::query(
+                "UPDATE entities SET attributes = attributes || $1, updated_at = NOW() WHERE id = $2"
+            )
+            .bind(serde_json::Value::Object(updates))
+            .bind(user_uuid)
+            .execute(&self.pool)
+            .await?;
+        }
 
         let updated_user = self.find_by_id(id).await?;
-
-        // [DEPRECATED] Technical Debt: Dual-write pattern.
-        // Syncing explicitly named columns to JSON attributes in Ontology.
-
-        // Sync ontology entity
-        if let Ok(user_class) = self.ontology_service.get_system_class("User").await {
-            // Find the entity by user_id
-            let entity_id = sqlx::query_scalar::<_, Uuid>(
-                "SELECT id FROM entities WHERE class_id = $1 AND attributes->>'user_id' = $2",
-            )
-            .bind(user_class.id)
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await
-            .ok()
-            .flatten();
-
-            if let Some(eid) = entity_id {
-                let _ = self
-                    .ontology_service
-                    .update_entity(
-                        eid,
-                        crate::features::ontology::models::UpdateEntityInput {
-                            display_name: username.clone().or(Some(updated_user.username.clone())),
-                            parent_entity_id: None,
-                            attributes: Some(serde_json::json!({
-                                "user_id": id,
-                                "username": updated_user.username,
-                                "email": updated_user.email,
-                                "last_login_at": updated_user.last_login_at,
-                                "last_login_ip": updated_user.last_login_ip,
-                            })),
-                        },
-                        performing_user_id,
-                    )
-                    .await;
-            }
-        }
 
         // Log the change
         if let Some(uid) = performing_user_id {
@@ -214,7 +164,7 @@ impl UserService {
         performing_user_id: Option<Uuid>,
     ) -> Result<(), AuthError> {
         let user_uuid = Uuid::parse_str(id).map_err(|_| AuthError::UserNotFound)?;
-        sqlx::query("DELETE FROM users WHERE id = $1")
+        sqlx::query("UPDATE entities SET deleted_at = NOW() WHERE id = $1")
             .bind(user_uuid)
             .execute(&self.pool)
             .await?;

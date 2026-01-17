@@ -45,25 +45,28 @@ impl ImpactService {
             lost_access: vec![],
         };
 
-        // 1. Identify all users who hold this role (Global or Scoped)
-        // We only care about users who *currently* have this role, as they are the ones affected
-        // Query to get distinct users with this role
+        // 1. Identify all users who hold this role via 'has_role' relationships
         let users = sqlx::query(
             r#"
             SELECT DISTINCT u.id, u.email, u.username
-            FROM users u
-            LEFT JOIN user_roles ur ON u.id = ur.user_id
-            LEFT JOIN scoped_user_roles sur ON u.id = sur.user_id
-            WHERE (ur.role_id = $1) OR (sur.role_id = $1 AND sur.revoked_at IS NULL)
+            FROM unified_users u
+            JOIN relationships r ON u.id = r.source_entity_id
+            WHERE r.target_entity_id = $1 
+              AND r.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_role')
+              -- Check temporal validity if metadata exists
+              AND (
+                (r.metadata->>'valid_from') IS NULL OR 
+                (r.metadata->>'valid_from')::timestamptz <= NOW()
+              )
+              AND (
+                (r.metadata->>'valid_until') IS NULL OR 
+                (r.metadata->>'valid_until')::timestamptz >= NOW()
+              )
             "#,
         )
         .bind(input.role_id)
         .fetch_all(&self.pool)
         .await?;
-
-        // 2. For each user, check the impact
-        // Optimization: For "Added" permissions, everyone with the role gains them (unless they already had them)
-        // For "Removed" permissions, they lose them unless they have them from another role.
 
         for user_row in users {
             let user_row_id: Uuid = user_row.get("id");
@@ -72,22 +75,27 @@ impl ImpactService {
 
             // Check LOST access
             for perm in &input.removed_permissions {
-                // Check if user has this permission from ANY OTHER role
-                // We exclude the current role_id from the check
                 let has_alternative: bool = sqlx::query_scalar(
                     r#"
                     SELECT EXISTS (
                         SELECT 1
-                        FROM (
-                            -- Global Roles
-                            SELECT ur.role_id FROM user_roles ur WHERE ur.user_id = $1 AND ur.role_id != $2
-                            UNION
-                            -- Scoped Roles
-                            SELECT sur.role_id FROM scoped_user_roles sur WHERE sur.user_id = $1 AND sur.role_id != $2 AND sur.revoked_at IS NULL
-                        ) as user_roles_combined
-                        JOIN role_permission_types rpt ON user_roles_combined.role_id = rpt.role_id
-                        JOIN permission_types pt ON rpt.permission_type_id = pt.id
-                        WHERE pt.name = $3
+                        FROM relationships r_has_role
+                        JOIN relationships r_grant ON r_has_role.target_entity_id = r_grant.source_entity_id
+                        JOIN entities e_perm ON r_grant.target_entity_id = e_perm.id
+                        WHERE r_has_role.source_entity_id = $1
+                          AND r_has_role.target_entity_id != $2
+                          AND r_has_role.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_role')
+                          AND r_grant.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission')
+                          AND e_perm.display_name = $3
+                          -- Check temporal validity
+                          AND (
+                            (r_has_role.metadata->>'valid_from') IS NULL OR 
+                            (r_has_role.metadata->>'valid_from')::timestamptz <= NOW()
+                          )
+                          AND (
+                            (r_has_role.metadata->>'valid_until') IS NULL OR 
+                            (r_has_role.metadata->>'valid_until')::timestamptz >= NOW()
+                          )
                     )
                     "#
                 )
@@ -113,16 +121,22 @@ impl ImpactService {
                     r#"
                     SELECT EXISTS (
                         SELECT 1
-                        FROM (
-                             -- Global Roles
-                            SELECT ur.role_id FROM user_roles ur WHERE ur.user_id = $1
-                            UNION
-                             -- Scoped Roles
-                            SELECT sur.role_id FROM scoped_user_roles sur WHERE sur.user_id = $1 AND sur.revoked_at IS NULL
-                        ) as user_roles_combined
-                        JOIN role_permission_types rpt ON user_roles_combined.role_id = rpt.role_id
-                        JOIN permission_types pt ON rpt.permission_type_id = pt.id
-                        WHERE pt.name = $2
+                        FROM relationships r_has_role
+                        JOIN relationships r_grant ON r_has_role.target_entity_id = r_grant.source_entity_id
+                        JOIN entities e_perm ON r_grant.target_entity_id = e_perm.id
+                        WHERE r_has_role.source_entity_id = $1
+                          AND r_has_role.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_role')
+                          AND r_grant.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission')
+                          AND e_perm.display_name = $2
+                          -- Check temporal validity
+                          AND (
+                            (r_has_role.metadata->>'valid_from') IS NULL OR 
+                            (r_has_role.metadata->>'valid_from')::timestamptz <= NOW()
+                          )
+                          AND (
+                            (r_has_role.metadata->>'valid_until') IS NULL OR 
+                            (r_has_role.metadata->>'valid_until')::timestamptz >= NOW()
+                          )
                     )
                     "#
                 )

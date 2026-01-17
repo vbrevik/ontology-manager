@@ -9,13 +9,21 @@ async fn test_mfa_setup_flow(pool: PgPool) {
     let user_id = Uuid::new_v4();
     let email = format!("mfa_test_{}@example.com", user_id);
     
-    sqlx::query(
-        "INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4)"
+    // Get User class ID
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    sqlx::query!(
+        "INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)",
+        user_id,
+        user_class_id,
+        email,
+        serde_json::json!({
+            "username": email,
+            "email": email,
+            "password_hash": "test_hash"
+        })
     )
-    .bind(user_id)
-    .bind(&email)
-    .bind(&email)
-    .bind("test_hash")
     .execute(&pool)
     .await
     .expect("Failed to create test user");
@@ -72,13 +80,21 @@ async fn test_mfa_backup_code_usage(pool: PgPool) {
     let user_id = Uuid::new_v4();
     let email = format!("mfa_backup_{}@example.com", user_id);
     
-    sqlx::query(
-        "INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4)"
+    // Get User class ID
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    sqlx::query!(
+        "INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)",
+        user_id,
+        user_class_id,
+        email,
+        serde_json::json!({
+            "username": email,
+            "email": email,
+            "password_hash": "test_hash"
+        })
     )
-    .bind(user_id)
-    .bind(&email)
-    .bind(&email)
-    .bind("test_hash")
     .execute(&pool)
     .await
     .expect("Failed to create test user");
@@ -92,7 +108,7 @@ async fn test_mfa_backup_code_usage(pool: PgPool) {
     let setup = mfa_service.setup_mfa(user_id, &email).await.unwrap();
     
     // Manually enable MFA for backup code test (skip TOTP verification)
-    sqlx::query("UPDATE user_mfa SET is_enabled = TRUE, is_verified = TRUE WHERE user_id = $1")
+    sqlx::query("UPDATE entities SET attributes = attributes || '{\"mfa_enabled\": true, \"mfa_verified\": true}'::jsonb WHERE id = $1")
         .bind(user_id)
         .execute(&pool)
         .await
@@ -118,13 +134,21 @@ async fn test_mfa_disable(pool: PgPool) {
     let user_id = Uuid::new_v4();
     let email = format!("mfa_disable_{}@example.com", user_id);
     
-    sqlx::query(
-        "INSERT INTO users (id, username, email, password_hash) VALUES ($1, $2, $3, $4)"
+    // Get User class ID
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    sqlx::query!(
+        "INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)",
+        user_id,
+        user_class_id,
+        email,
+        serde_json::json!({
+            "username": email,
+            "email": email,
+            "password_hash": "test_hash"
+        })
     )
-    .bind(user_id)
-    .bind(&email)
-    .bind(&email)
-    .bind("test_hash")
     .execute(&pool)
     .await
     .expect("Failed to create test user");
@@ -138,7 +162,7 @@ async fn test_mfa_disable(pool: PgPool) {
     mfa_service.setup_mfa(user_id, &email).await.unwrap();
     
     // Manually enable MFA
-    sqlx::query("UPDATE user_mfa SET is_enabled = TRUE, is_verified = TRUE WHERE user_id = $1")
+    sqlx::query("UPDATE entities SET attributes = attributes || '{\"mfa_enabled\": true, \"mfa_verified\": true}'::jsonb WHERE id = $1")
         .bind(user_id)
         .execute(&pool)
         .await

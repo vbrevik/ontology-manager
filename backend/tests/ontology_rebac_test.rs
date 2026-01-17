@@ -16,24 +16,8 @@ async fn test_ontology_rebac_integration_flow(pool: PgPool) {
     let viewer_id = Uuid::new_v4();
 
     // Owner Account
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(owner_id)
-        .bind("owner@test.com")
-        .bind("owner")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     // Viewer Account
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(viewer_id)
-        .bind("viewer@test.com")
-        .bind("viewer")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     // Get User Class
     let user_class = services

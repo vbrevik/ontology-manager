@@ -124,6 +124,7 @@ async fn main() {
         abac_service.clone(),
         user_service.clone(),
         audit_service.clone(),
+        ontology_service.clone(),
         mfa_service.clone(),
     );
     let system_service =

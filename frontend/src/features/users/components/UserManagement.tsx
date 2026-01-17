@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from 'react'
 import { getPasswordStrength } from '@/lib/password'
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { getCsrfToken } from '@/features/auth/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -107,24 +97,17 @@ export default function UserManagement() {
         setCreateError(null)
     }
 
-    const [userToDelete, setUserToDelete] = useState<string | null>(null)
-
-    const handleDeleteClick = (id: string) => {
-        setUserToDelete(id)
-    }
-
-    const confirmDelete = async () => {
-        if (!userToDelete) return
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this user?")) return
         clearMessages()
         const token = getCsrfToken()
         if (!token) {
             setError('CSRF session expired. Please refresh the page.')
-            setUserToDelete(null)
             return
         }
 
         try {
-            const res = await fetch(`/api/users/${userToDelete}`, {
+            const res = await fetch(`/api/users/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-Token': token,
@@ -139,8 +122,6 @@ export default function UserManagement() {
             fetchUsers()
         } catch (err: any) {
             setError(err.message)
-        } finally {
-            setUserToDelete(null)
         }
     }
 
@@ -405,7 +386,7 @@ export default function UserManagement() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 text-slate-400 hover:text-red-600"
-                                                    onClick={() => handleDeleteClick(user.id)}
+                                                    onClick={() => handleDelete(user.id)}
                                                     title="Delete User"
                                                 >
                                                     <Trash2 size={16} />

@@ -2,9 +2,20 @@ import { useState, useEffect } from 'react';
 import type { UserRoleAssignment, Role, Resource } from '@/features/abac/lib/api';
 import { abacApi } from '@/features/abac/lib/api';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, ShieldCheck, Box } from 'lucide-react';
+import { Trash2, Plus, ShieldCheck, Box, Clock, Calendar } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { TemporalRoleForm } from '@/features/rebac/components/TemporalRoleForm';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+
 
 // Assuming Select component might not be fully installed/configured, using native select for reliability
 // If shadcn Select is available, I'd use it, but for now native is safer without verifying all UI components.
@@ -19,6 +30,7 @@ export function UserRolesPanel({ userId }: { userId: string }) {
     // Form state
     const [selectedRole, setSelectedRole] = useState('');
     const [selectedResource, setSelectedResource] = useState(''); // Empty string = global (null)
+    const [editingAssignment, setEditingAssignment] = useState<UserRoleAssignment | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -74,6 +86,41 @@ export function UserRolesPanel({ userId }: { userId: string }) {
         }
     };
 
+    const handleUpdateSchedule = async (data: any) => {
+        if (!editingAssignment) return;
+
+        try {
+            await abacApi.updateRoleSchedule(editingAssignment.id, {
+                valid_from: data.validFrom?.toISOString(),
+                valid_until: data.validUntil?.toISOString(),
+                schedule_cron: data.scheduleCron
+            });
+
+            // Optimistic update
+            setAssignments(prev => prev.map(a =>
+                a.id === editingAssignment.id
+                    ? { ...a, valid_from: data.validFrom?.toISOString(), valid_until: data.validUntil?.toISOString(), schedule_cron: data.scheduleCron }
+                    : a
+            ));
+
+            setEditingAssignment(null);
+            setError(null);
+        } catch (err: any) {
+            console.error(err);
+            setError("Failed to update schedule.");
+        }
+    };
+
+    // Helper to determine temporal status
+    const getTemporalStatus = (a: any) => {
+        const now = new Date();
+        if (a.valid_from && new Date(a.valid_from) > now) return 'scheduled';
+        if (a.valid_until && new Date(a.valid_until) < now) return 'expired';
+        // Check cron if needed, for now simplified
+        if (a.schedule_cron) return 'recurring';
+        return 'active';
+    };
+
     if (loading) return <div className="p-4 text-center text-xs text-muted-foreground">Loading permissions...</div>;
 
     return (
@@ -95,36 +142,84 @@ export function UserRolesPanel({ userId }: { userId: string }) {
                         No roles assigned to this user.
                     </div>
                 ) : (
-                    assignments.map(a => (
-                        <div key={a.id} className="flex items-center justify-between p-2 rounded border bg-card text-sm group hover:border-primary/30 transition-colors">
-                            <div className="flex items-center gap-3">
-                                <div className="flex flex-col">
-                                    <span className="font-medium flex items-center gap-1.5">
-                                        <ShieldCheck className="h-3 w-3 text-muted-foreground" />
-                                        {a.role_name}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                        {a.resource_name ? (
-                                            <>
-                                                <Box className="h-3 w-3" />
-                                                Running on {a.resource_name}
-                                            </>
-                                        ) : (
-                                            <span className="italic">Global Scope</span>
-                                        )}
-                                    </span>
+                    assignments.map(a => {
+                        const status = getTemporalStatus(a);
+
+                        return (
+                            <div key={a.id} className="flex items-center justify-between p-3 rounded border bg-card text-sm group hover:border-primary/30 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex flex-col gap-1">
+                                        <span className="font-medium flex items-center gap-2">
+                                            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                            {a.role_name}
+                                            {status === 'active' && <Badge variant="outline" className="text-[10px] h-4 text-green-600 border-green-200 bg-green-50">Active</Badge>}
+                                            {status === 'scheduled' && <Badge variant="outline" className="text-[10px] h-4 text-amber-600 border-amber-200 bg-amber-50">Scheduled</Badge>}
+                                            {status === 'expired' && <Badge variant="outline" className="text-[10px] h-4 text-red-600 border-red-200 bg-red-50">Expired</Badge>}
+                                            {status === 'recurring' && <Badge variant="outline" className="text-[10px] h-4 text-blue-600 border-blue-200 bg-blue-50">Recurring</Badge>}
+                                        </span>
+                                        <div className="flex flex-col gap-0.5 ml-6">
+                                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                {a.resource_name ? (
+                                                    <>
+                                                        <Box className="h-3 w-3" />
+                                                        Scope: {a.resource_name}
+                                                    </>
+                                                ) : (
+                                                    <span className="italic flex items-center gap-1"><Box className="h-3 w-3" /> Global Scope</span>
+                                                )}
+                                            </span>
+                                            {/* Temporal Details */}
+                                            {(a as any).valid_from && (
+                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    From: {format(new Date((a as any).valid_from), 'PP')}
+                                                </span>
+                                            )}
+                                            {(a as any).schedule_cron && (
+                                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    Cron: {(a as any).schedule_cron}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Dialog>
+                                        <DialogTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditingAssignment(a)}>
+                                                <Calendar className="h-3 w-3 text-muted-foreground" />
+                                            </Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Edit Schedule</DialogTitle>
+                                            </DialogHeader>
+                                            <div className="py-4">
+                                                <TemporalRoleForm
+                                                    // @ts-ignore
+                                                    initialData={{
+                                                        validFrom: (a as any).valid_from ? new Date((a as any).valid_from) : undefined,
+                                                        validUntil: (a as any).valid_until ? new Date((a as any).valid_until) : undefined,
+                                                        scheduleCron: (a as any).schedule_cron
+                                                    }}
+                                                    onSubmit={handleUpdateSchedule}
+                                                />
+                                            </div>
+                                        </DialogContent>
+                                    </Dialog>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleRemove(a.id)}
+                                        className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive transition-opacity"
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
                                 </div>
                             </div>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemove(a.id)}
-                                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                                <Trash2 className="h-3 w-3" />
-                            </Button>
-                        </div>
-                    ))
+                        )
+                    })
                 )}
             </div>
 

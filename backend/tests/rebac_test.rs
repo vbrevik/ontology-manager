@@ -12,14 +12,6 @@ async fn test_rebac_scoped_permission(pool: PgPool) {
 
     // 1. Create User
     let user_id = Uuid::new_v4();
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind(format!("rebac_{}@example.com", user_id))
-        .bind(format!("rebac_{}", user_id.simple()))
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .expect("Failed to create user");
 
     // Create User Entity (Required for ReBAC & Relationships)
     let user_class = services
@@ -215,14 +207,6 @@ async fn test_rebac_inheritance(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // Setup User and User Entity
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind("u2@e.com")
-        .bind("u2")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     let user_class = services
         .ontology_service
@@ -376,14 +360,6 @@ async fn test_rebac_explicit_deny(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // Setup User
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind("u3@e.com")
-        .bind("u3")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     let user_class = services
         .ontology_service

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Shield, Box, Plus, Trash2, Key } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function AbacManagement() {
     const [activeTab, setActiveTab] = useState<'roles' | 'resources'>('roles');
@@ -86,53 +87,55 @@ function RolesTab() {
                         <Button size="sm" variant="ghost" onClick={() => setIsCreating(true)}><Plus className="h-4 w-4" /></Button>
                     </div>
                 </CardHeader>
-                <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                    {isCreating && (
-                        <form onSubmit={handleCreateRole} className="p-3 border rounded-lg bg-muted/30 space-y-3 mb-2">
-                            <div className="space-y-1">
-                                <Label className="text-xs">Name</Label>
-                                <Input
-                                    value={newRoleName}
-                                    onChange={e => setNewRoleName(e.target.value)}
-                                    placeholder="e.g. moderator"
-                                    className="h-8 text-sm"
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <Label className="text-xs">Description</Label>
-                                <Input
-                                    value={newRoleDesc}
-                                    onChange={e => setNewRoleDesc(e.target.value)}
-                                    placeholder="Optional"
-                                    className="h-8 text-sm"
-                                />
-                            </div>
-                            <div className="flex gap-2">
-                                <Button type="submit" size="sm" className="w-full">Create</Button>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
-                            </div>
-                        </form>
-                    )}
+                <ScrollArea className="flex-1 p-2">
+                    <div className="space-y-2">
+                        {isCreating && (
+                            <form onSubmit={handleCreateRole} className="p-3 border rounded-lg bg-muted/30 space-y-3 mb-2">
+                                <div className="space-y-1">
+                                    <Label className="text-xs">Name</Label>
+                                    <Input
+                                        value={newRoleName}
+                                        onChange={e => setNewRoleName(e.target.value)}
+                                        placeholder="e.g. moderator"
+                                        className="h-8 text-sm"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <Label className="text-xs">Description</Label>
+                                    <Input
+                                        value={newRoleDesc}
+                                        onChange={e => setNewRoleDesc(e.target.value)}
+                                        placeholder="Optional"
+                                        className="h-8 text-sm"
+                                    />
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button type="submit" size="sm" className="w-full">Create</Button>
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => setIsCreating(false)}>Cancel</Button>
+                                </div>
+                            </form>
+                        )}
 
-                    {roles.map(role => (
-                        <button
-                            key={role.id}
-                            onClick={() => setSelectedRole(role)}
-                            className={`w-full text-left p-3 rounded-lg border transition-colors hover:bg-muted/50 ${selectedRole?.id === role.id ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/20' : 'bg-card border-border/40'
-                                }`}
-                        >
-                            <div className="flex items-center gap-2 font-medium">
-                                <Shield className="h-4 w-4 text-primary" />
-                                {role.name}
-                            </div>
-                            {role.description && <p className="text-xs text-muted-foreground mt-1 ml-6">{role.description}</p>}
-                        </button>
-                    ))}
-                    {roles.length === 0 && !loading && (
-                        <div className="text-center p-4 text-muted-foreground text-sm">No roles found</div>
-                    )}
-                </div>
+                        {roles.map(role => (
+                            <button
+                                key={role.id}
+                                onClick={() => setSelectedRole(role)}
+                                className={`w-full text-left p-3 rounded-lg border transition-colors hover:bg-muted/50 ${selectedRole?.id === role.id ? 'bg-primary/5 border-primary/20 ring-1 ring-primary/20' : 'bg-card border-border/40'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-2 font-medium">
+                                    <Shield className="h-4 w-4 text-primary" />
+                                    {role.name}
+                                </div>
+                                {role.description && <p className="text-xs text-muted-foreground mt-1 ml-6">{role.description}</p>}
+                            </button>
+                        ))}
+                        {roles.length === 0 && !loading && (
+                            <div className="text-center p-4 text-muted-foreground text-sm">No roles found</div>
+                        )}
+                    </div>
+                </ScrollArea>
             </Card>
 
             {/* Permissions Panel */}
@@ -203,47 +206,49 @@ function PermissionsEditor({ role }: { role: Role }) {
                     </div>
                 </div>
             </CardHeader>
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                <form onSubmit={handleAddPermission} className="flex gap-3 items-end">
-                    <div className="flex-1 space-y-1.5">
-                        <Label>Add Permission</Label>
-                        <Input
-                            value={newAction}
-                            onChange={e => setNewAction(e.target.value)}
-                            placeholder="e.g. project:read or *"
-                        />
-                        <p className="text-[11px] text-muted-foreground">Type an action string. Use '*' for full access.</p>
-                    </div>
-                    <Button type="submit" disabled={!newAction.trim()}>Add</Button>
-                </form>
+            <ScrollArea className="flex-1 p-4 md:p-6">
+                <div className="space-y-6">
+                    <form onSubmit={handleAddPermission} className="flex gap-3 items-end">
+                        <div className="flex-1 space-y-1.5">
+                            <Label>Add Permission</Label>
+                            <Input
+                                value={newAction}
+                                onChange={e => setNewAction(e.target.value)}
+                                placeholder="e.g. project:read or *"
+                            />
+                            <p className="text-[11px] text-muted-foreground">Type an action string. Use '*' for full access.</p>
+                        </div>
+                        <Button type="submit" disabled={!newAction.trim()}>Add</Button>
+                    </form>
 
-                <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Permissions</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {permissions.map(perm => (
-                            <div key={perm.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/20 group hover:border-primary/30 transition-colors">
-                                <div className="flex items-center gap-2">
-                                    <Key className="h-3 w-3 text-muted-foreground" />
-                                    <code className="text-sm font-mono text-foreground/90">{perm.action}</code>
+                    <div className="space-y-3">
+                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Permissions</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {permissions.map(perm => (
+                                <div key={perm.id} className="flex items-center justify-between p-3 rounded-md border bg-muted/20 group hover:border-primary/30 transition-colors">
+                                    <div className="flex items-center gap-2">
+                                        <Key className="h-3 w-3 text-muted-foreground" />
+                                        <code className="text-sm font-mono text-foreground/90">{perm.action}</code>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={() => handleRemovePermission(perm.id)}
+                                    >
+                                        <Trash2 className="h-3 w-3" />
+                                    </Button>
                                 </div>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => handleRemovePermission(perm.id)}
-                                >
-                                    <Trash2 className="h-3 w-3" />
-                                </Button>
-                            </div>
-                        ))}
-                        {permissions.length === 0 && !loading && (
-                            <div className="col-span-full py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-                                No permissions assigned yet.
-                            </div>
-                        )}
+                            ))}
+                            {permissions.length === 0 && !loading && (
+                                <div className="col-span-full py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                                    No permissions assigned yet.
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
+            </ScrollArea>
         </>
     );
 }

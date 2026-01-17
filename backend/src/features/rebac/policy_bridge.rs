@@ -27,7 +27,7 @@ impl RebacService {
         let attributes: serde_json::Value = entity_row.get(1);
 
         // Fetch user data
-        let email: String = sqlx::query_scalar("SELECT email FROM users WHERE id = $1")
+        let email: Option<String> = sqlx::query_scalar("SELECT email FROM unified_users WHERE id = $1")
             .bind(user_id)
             .fetch_one(&self.pool)
             .await?;
@@ -54,9 +54,10 @@ impl RebacService {
             "id".to_string(),
             serde_json::Value::String(user_id.to_string()),
         );
-        context
-            .user
-            .insert("email".to_string(), serde_json::Value::String(email));
+        context.user.insert(
+            "email".to_string(), 
+            serde_json::Value::String(email.unwrap_or_default())
+        );
 
         // 3. Environment attributes
         context.env.insert(

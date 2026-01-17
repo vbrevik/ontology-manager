@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS user_mfa (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES entities(id) ON DELETE CASCADE,
     
     -- TOTP Secret (base32 encoded)
     secret_key TEXT NOT NULL,
@@ -30,8 +30,10 @@ CREATE INDEX IF NOT EXISTS idx_user_mfa_user_id ON user_mfa(user_id);
 -- Helper function to check MFA status (for use in auth flow)
 CREATE OR REPLACE FUNCTION is_mfa_required(p_user_id UUID)
 RETURNS BOOLEAN AS $$
-    SELECT COALESCE(
-        (SELECT is_enabled AND is_verified FROM user_mfa WHERE user_id = p_user_id),
-        FALSE
+    SELECT EXISTS (
+        SELECT 1 FROM user_mfa 
+        WHERE user_id = p_user_id 
+          AND is_enabled = TRUE 
+          AND is_verified = TRUE
     );
 $$ LANGUAGE SQL STABLE;

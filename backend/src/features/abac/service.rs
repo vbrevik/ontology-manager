@@ -22,6 +22,8 @@ impl std::fmt::Display for AbacError {
     }
 }
 
+impl std::error::Error for AbacError {}
+
 impl From<sqlx::Error> for AbacError {
     fn from(err: sqlx::Error) -> Self {
         AbacError::DatabaseError(err.to_string())
@@ -173,7 +175,7 @@ impl AbacService {
 
     pub async fn list_resources(&self) -> Result<Vec<Resource>, AbacError> {
         let resources = sqlx::query_as::<_, Resource>(
-            "SELECT id, name, resource_type, created_at FROM resources ORDER BY name",
+            "SELECT * FROM unified_resources ORDER BY name",
         )
         .fetch_all(&self.pool)
         .await?;
@@ -181,13 +183,34 @@ impl AbacService {
     }
 
     pub async fn create_resource(&self, input: CreateResourceInput) -> Result<Resource, AbacError> {
+        let class = self
+            .ontology_service
+            .get_system_class("Resource")
+            .await
+            .map_err(|e| AbacError::DatabaseError(e.to_string()))?;
+
+        let id = Uuid::new_v4();
+
+        // Insert into entities as primary store
         let resource = sqlx::query_as::<_, Resource>(
-            "INSERT INTO resources (name, resource_type) VALUES ($1, $2) RETURNING id, name, resource_type, created_at"
+            r#"
+            WITH inserted AS (
+                INSERT INTO entities (id, class_id, display_name, attributes, approval_status)
+                VALUES ($1, $2, $3, $4, 'APPROVED'::approval_status)
+                RETURNING *
+            )
+            SELECT id, name, resource_type, created_at FROM unified_resources WHERE id = (SELECT id FROM inserted)
+            "#
         )
+            .bind(id)
+            .bind(class.id)
             .bind(&input.name)
-            .bind(&input.resource_type)
+            .bind(serde_json::json!({
+                "resource_type": input.resource_type
+            }))
             .fetch_one(&self.pool)
             .await?;
+
         Ok(resource)
     }
 

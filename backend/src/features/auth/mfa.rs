@@ -1,5 +1,6 @@
 use sha2::{Digest, Sha256};
-use sqlx::{PgPool, Row};
+use sqlx::PgPool;
+use chrono::Utc;
 use thiserror::Error;
 use totp_rs::{Algorithm, Secret, TOTP};
 use uuid::Uuid;
@@ -78,23 +79,16 @@ impl MfaService {
     /// Generate a new TOTP secret and backup codes for user
     pub async fn setup_mfa(&self, user_id: Uuid, email: &str) -> Result<MfaSetupResponse, MfaError> {
         // Check if MFA already exists and is enabled
-        let existing = sqlx::query(
-            "SELECT is_enabled FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT mfa_enabled FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
-        .await?;
+        .await?
+        .ok_or(MfaError::MfaNotFound)?;
 
-        if let Some(row) = existing {
-            let is_enabled: bool = row.get("is_enabled");
-            if is_enabled {
-                return Err(MfaError::AlreadyEnabled);
-            }
-            // Delete existing non-enabled setup to allow re-setup
-            sqlx::query("DELETE FROM user_mfa WHERE user_id = $1")
-                .bind(user_id)
-                .execute(&self.pool)
-                .await?;
+        if user.mfa_enabled.unwrap_or(false) {
+            return Err(MfaError::AlreadyEnabled);
         }
 
         // Generate TOTP secret
@@ -123,19 +117,13 @@ impl MfaService {
             .map(|code| hash_backup_code(code))
             .collect();
 
-        // Store in database
-        sqlx::query(
-            r#"
-            INSERT INTO user_mfa (user_id, secret_key, backup_codes, backup_codes_remaining)
-            VALUES ($1, $2, $3, $4)
-            "#
-        )
-        .bind(user_id)
-        .bind(&secret_base32)
-        .bind(&hashed_codes)
-        .bind(backup_codes.len() as i32)
-        .execute(&self.pool)
-        .await?;
+        // Store in ontology
+        self.update_mfa_attributes(user_id, serde_json::json!({
+            "mfa_secret": secret_base32,
+            "backup_codes": hashed_codes,
+            "mfa_enabled": false,
+            "mfa_verified": false
+        })).await?;
 
         Ok(MfaSetupResponse {
             secret: secret_base32,
@@ -146,156 +134,137 @@ impl MfaService {
 
     /// Verify TOTP code and enable MFA
     pub async fn verify_setup(&self, user_id: Uuid, code: &str) -> Result<(), MfaError> {
-        let row = sqlx::query(
-            "SELECT secret_key, is_enabled FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT mfa_secret, mfa_enabled FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(MfaError::MfaNotFound)?;
 
-        let is_enabled: bool = row.get("is_enabled");
-        if is_enabled {
+        if user.mfa_enabled.unwrap_or(false) {
             return Err(MfaError::AlreadyEnabled);
         }
 
-        let secret_key: String = row.get("secret_key");
+        let secret_key = user.mfa_secret.ok_or(MfaError::NotEnabled)?;
         
         if !self.verify_totp(&secret_key, code)? {
             return Err(MfaError::InvalidCode);
         }
 
         // Enable MFA
-        sqlx::query(
-            r#"
-            UPDATE user_mfa 
-            SET is_enabled = TRUE, is_verified = TRUE, enabled_at = NOW(), updated_at = NOW()
-            WHERE user_id = $1
-            "#
-        )
-        .bind(user_id)
-        .execute(&self.pool)
-        .await?;
+        self.update_mfa_attributes(user_id, serde_json::json!({
+            "mfa_enabled": true,
+            "mfa_verified": true,
+            "mfa_enabled_at": Utc::now()
+        })).await?;
 
         Ok(())
     }
 
     /// Verify TOTP code during login
     pub async fn verify_code(&self, user_id: Uuid, code: &str) -> Result<(), MfaError> {
-        let row = sqlx::query(
-            "SELECT secret_key, is_enabled, is_verified FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT mfa_secret, mfa_enabled, mfa_verified FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(MfaError::MfaNotFound)?;
 
-        let is_enabled: bool = row.get("is_enabled");
-        let is_verified: bool = row.get("is_verified");
-
-        if !is_enabled || !is_verified {
+        if !user.mfa_enabled.unwrap_or(false) || !user.mfa_verified.unwrap_or(false) {
             return Err(MfaError::NotEnabled);
         }
 
-        let secret_key: String = row.get("secret_key");
+        let secret_key = user.mfa_secret.ok_or(MfaError::NotEnabled)?;
         
         if !self.verify_totp(&secret_key, code)? {
             return Err(MfaError::InvalidCode);
         }
 
         // Update last_used_at
-        sqlx::query(
-            "UPDATE user_mfa SET last_used_at = NOW(), updated_at = NOW() WHERE user_id = $1"
-        )
-        .bind(user_id)
-        .execute(&self.pool)
-        .await?;
+        self.update_mfa_attributes(user_id, serde_json::json!({
+            "mfa_last_used_at": Utc::now()
+        })).await?;
 
         Ok(())
     }
 
     /// Verify backup code during login (single use)
     pub async fn verify_backup_code(&self, user_id: Uuid, code: &str) -> Result<(), MfaError> {
-        let row = sqlx::query(
-            "SELECT backup_codes, backup_codes_remaining, is_enabled FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT backup_codes, mfa_enabled FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(MfaError::MfaNotFound)?;
 
-        let is_enabled: bool = row.get("is_enabled");
-        if !is_enabled {
+        if !user.mfa_enabled.unwrap_or(false) {
             return Err(MfaError::NotEnabled);
         }
 
-        let remaining: i32 = row.get("backup_codes_remaining");
-        if remaining == 0 {
+        let backup_codes: Vec<String> = serde_json::from_value(user.backup_codes.unwrap_or(serde_json::json!([])))
+            .map_err(|_| MfaError::DatabaseError(sqlx::Error::Protocol("Invalid backup codes format".to_string())))?;
+
+        if backup_codes.is_empty() {
             return Err(MfaError::NoBackupCodes);
         }
 
-        let backup_codes: Vec<String> = row.get("backup_codes");
         let code_hash = hash_backup_code(code);
 
         // Find and remove the matching code
-        let mut found_index: Option<usize> = None;
-        for (i, stored_hash) in backup_codes.iter().enumerate() {
-            if stored_hash == &code_hash {
-                found_index = Some(i);
-                break;
-            }
+        let mut new_codes = backup_codes;
+        let original_len = new_codes.len();
+        new_codes.retain(|stored_hash| stored_hash != &code_hash);
+
+        if new_codes.len() == original_len {
+            return Err(MfaError::InvalidBackupCode);
         }
 
-        let idx = found_index.ok_or(MfaError::InvalidBackupCode)?;
-
-        // Remove the used code
-        let mut new_codes = backup_codes;
-        new_codes.remove(idx);
-
-        sqlx::query(
-            r#"
-            UPDATE user_mfa 
-            SET backup_codes = $2, backup_codes_remaining = backup_codes_remaining - 1, 
-                last_used_at = NOW(), updated_at = NOW()
-            WHERE user_id = $1
-            "#
-        )
-        .bind(user_id)
-        .bind(&new_codes)
-        .execute(&self.pool)
-        .await?;
+        self.update_mfa_attributes(user_id, serde_json::json!({
+            "backup_codes": new_codes,
+            "mfa_last_used_at": Utc::now()
+        })).await?;
 
         Ok(())
     }
 
     /// Disable MFA for user
     pub async fn disable_mfa(&self, user_id: Uuid) -> Result<(), MfaError> {
-        let result = sqlx::query(
-            "DELETE FROM user_mfa WHERE user_id = $1 AND is_enabled = TRUE"
+        let user = sqlx::query!(
+            "SELECT mfa_enabled FROM unified_users WHERE id = $1",
+            user_id
+        )
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(MfaError::MfaNotFound)?;
+
+        if !user.mfa_enabled.unwrap_or(false) {
+            return Err(MfaError::NotEnabled);
+        }
+
+        sqlx::query(
+            "UPDATE entities SET attributes = attributes - 'mfa_secret' - 'backup_codes' - 'mfa_enabled' - 'mfa_verified' - 'mfa_last_used_at' WHERE id = $1"
         )
         .bind(user_id)
         .execute(&self.pool)
         .await?;
-
-        if result.rows_affected() == 0 {
-            return Err(MfaError::NotEnabled);
-        }
 
         Ok(())
     }
 
     /// Regenerate backup codes
     pub async fn regenerate_backup_codes(&self, user_id: Uuid) -> Result<Vec<String>, MfaError> {
-        let row = sqlx::query(
-            "SELECT is_enabled FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT mfa_enabled FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?
         .ok_or(MfaError::MfaNotFound)?;
 
-        let is_enabled: bool = row.get("is_enabled");
-        if !is_enabled {
+        if !user.mfa_enabled.unwrap_or(false) {
             return Err(MfaError::NotEnabled);
         }
 
@@ -308,41 +277,32 @@ impl MfaService {
             .map(|code| hash_backup_code(code))
             .collect();
 
-        sqlx::query(
-            r#"
-            UPDATE user_mfa 
-            SET backup_codes = $2, backup_codes_remaining = $3, updated_at = NOW()
-            WHERE user_id = $1
-            "#
-        )
-        .bind(user_id)
-        .bind(&hashed_codes)
-        .bind(backup_codes.len() as i32)
-        .execute(&self.pool)
-        .await?;
+        self.update_mfa_attributes(user_id, serde_json::json!({
+            "backup_codes": hashed_codes
+        })).await?;
 
         Ok(backup_codes)
     }
 
     /// Get MFA status for user
     pub async fn get_status(&self, user_id: Uuid) -> Result<MfaStatus, MfaError> {
-        let row = sqlx::query(
-            r#"
-            SELECT is_enabled, is_verified, backup_codes_remaining, last_used_at 
-            FROM user_mfa WHERE user_id = $1
-            "#
+        let user = sqlx::query!(
+            "SELECT mfa_enabled, mfa_verified, backup_codes, mfa_last_used_at FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?;
 
-        match row {
-            Some(r) => Ok(MfaStatus {
-                is_enabled: r.get("is_enabled"),
-                is_verified: r.get("is_verified"),
-                backup_codes_remaining: r.get("backup_codes_remaining"),
-                last_used_at: r.get("last_used_at"),
-            }),
+        match user {
+            Some(u) => {
+                let codes: Vec<String> = serde_json::from_value(u.backup_codes.unwrap_or(serde_json::json!([]))).unwrap_or_default();
+                Ok(MfaStatus {
+                    is_enabled: u.mfa_enabled.unwrap_or(false),
+                    is_verified: u.mfa_verified.unwrap_or(false),
+                    backup_codes_remaining: codes.len() as i32,
+                    last_used_at: u.mfa_last_used_at,
+                })
+            },
             None => Ok(MfaStatus {
                 is_enabled: false,
                 is_verified: false,
@@ -354,14 +314,25 @@ impl MfaService {
 
     /// Check if MFA is required for user
     pub async fn is_mfa_required(&self, user_id: Uuid) -> Result<bool, MfaError> {
-        let row = sqlx::query(
-            "SELECT is_enabled AND is_verified as required FROM user_mfa WHERE user_id = $1"
+        let user = sqlx::query!(
+            "SELECT mfa_enabled, mfa_verified FROM unified_users WHERE id = $1",
+            user_id
         )
-        .bind(user_id)
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|r| r.get::<bool, _>("required")).unwrap_or(false))
+        Ok(user.map(|u| u.mfa_enabled.unwrap_or(false) && u.mfa_verified.unwrap_or(false)).unwrap_or(false))
+    }
+
+    async fn update_mfa_attributes(&self, user_id: Uuid, attributes: serde_json::Value) -> Result<(), MfaError> {
+        sqlx::query(
+            "UPDATE entities SET attributes = attributes || $1, updated_at = NOW() WHERE id = $2"
+        )
+        .bind(attributes)
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
     }
 
     fn verify_totp(&self, secret_base32: &str, code: &str) -> Result<bool, MfaError> {

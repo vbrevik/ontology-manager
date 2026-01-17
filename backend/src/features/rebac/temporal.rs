@@ -1,6 +1,6 @@
 use super::models::*;
 use super::service::{RebacError, RebacService};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 impl RebacService {
@@ -299,6 +299,8 @@ impl RebacService {
         &self,
         role_assignment_id: Uuid,
         schedule_cron: Option<String>,
+        valid_from: Option<DateTime<Utc>>,
+        valid_until: Option<DateTime<Utc>>,
     ) -> Result<ScopedUserRole, RebacError> {
         if let Some(ref expr) = schedule_cron {
             if !expr.is_empty() {
@@ -309,13 +311,19 @@ impl RebacService {
         let rel = sqlx::query_as::<_, crate::features::ontology::models::Relationship>(
             r#"
             UPDATE relationships 
-            SET metadata = metadata || jsonb_build_object('schedule_cron', $2)
+            SET metadata = metadata || jsonb_build_object(
+                'schedule_cron', $2,
+                'valid_from', $3,
+                'valid_until', $4
+            )
             WHERE id = $1
             RETURNING *
             "#,
         )
         .bind(role_assignment_id)
         .bind(&schedule_cron)
+        .bind(valid_from)
+        .bind(valid_until)
         .fetch_optional(&self.pool)
         .await?
         .ok_or_else(|| RebacError::NotFound("Role assignment not found".to_string()))?;

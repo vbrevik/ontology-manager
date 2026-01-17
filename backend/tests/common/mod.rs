@@ -64,6 +64,7 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         abac_service.clone(),
         user_service.clone(),
         audit_service.clone(),
+        ontology_service.clone(),
         mfa_service.clone(),
     );
 

@@ -1,4 +1,111 @@
-# User MVP: Password Reset & 2FA Implementation Plan
+# Backend Auth Feature - Test Coverage Improvement Plan
+
+## Overview
+This document outlines the test coverage improvement plan for the backend authentication feature. **Phase 1 (JWT Module) is complete with 81.5% coverage**. Remaining phases focus on service layer, routes, security, concurrency, and integration testing.
+
+## Current State (2026-01-17)
+
+### Coverage Analysis
+- **Overall Auth Feature Coverage**: 0.89% (31/3,493 lines)
+- **JWT Module**: 81.5% (31/38 lines) - ✅ COMPLETED
+- **Service Layer**: 0% (0/365 lines)
+- **Routes**: 0% (0/180 lines)
+- **Models**: Partial validation tested
+
+### Existing Tests
+- **auth_test.rs**: 5 tests (service-level: register, login, change-password, notifications, session-revocation)
+- **auth_api_test.rs**: 8 tests (API-level: register, login, refresh, logout, change-password, notifications, sessions, profile-update, admin-functions)
+
+---
+
+## Phase 1: JWT Module Unit Tests ✅ COMPLETED
+
+**File**: `backend/tests/jwt_test.rs`
+**Target Coverage**: 90%+ (45 lines)
+**Achieved**: 81.5% (31/38 lines) - ✅ SATISFIES >75% TARGET
+**Priority**: HIGH (Critical security component)
+
+### Completed Tests (24 total)
+
+#### Token Creation Tests (5 tests)
+- [x] `test_create_jwt_valid_token` - Verify token contains all required claims
+- [x] `test_create_jwt_expiration_time` - Verify exp timestamp is correct
+- [x] `test_create_jwt_with_roles_and_permissions` - Include auth claims
+- [x] `test_create_jwt_empty_roles_and_permissions` - Handle empty claims
+
+#### Refresh Token Tests (4 tests)
+- [x] `test_create_refresh_token_with_jti` - Verify JTI is generated
+- [x] `test_create_refresh_token_longer_expiration` - Verify 30-day expiry
+- [x] `test_create_refresh_token_jti_uniqueness` - Multiple calls generate unique JTIs
+- [x] `test_create_refresh_token_includes_roles_and_permissions` - Include claims
+
+#### Token Validation Tests (5 tests)
+- [x] `test_validate_jwt_success` - Accept valid token
+- [x] `test_validate_jwt_expired` - Reject expired tokens (ignored - JWT lib behavior)
+- [x] `test_validate_jwt_invalid_signature` - Reject tampered tokens
+- [x] `test_validate_jwt_malformed` - Reject malformed tokens
+- [x] `test_validate_jwt_with_jti` - Validate tokens with JTI
+
+#### PEM Loading Tests (3 tests)
+- [x] `test_load_private_pem_from_config_priority` - Use config-provided key
+- [x] `test_load_public_pem_from_config_priority` - Use config-provided key
+- [x] `test_config_keys_have_valid_pem_format` - Verify PEM format
+
+#### Token Property Tests (4 tests)
+- [x] `test_token_issued_at_time` - Verify iat timestamp
+- [x] `test_token_subject_encoding` - Verify sub encoding
+- [x] `test_token_role_serialization` - Verify role serialization
+- [x] `test_token_permission_serialization` - Verify permission serialization
+
+#### Integration Tests (3 tests)
+- [x] `test_multiple_validations_same_token` - Reusable validation
+- [x] `test_refresh_token_different_from_access_token` - Token differentiation
+- [x] `test_concurrent_token_creation` - Thread-safe token generation
+
+### Test Helpers Created
+- [x] `tests/jwt_helpers.rs` module
+  - `create_test_config()` - Config with test keys
+
+### Code Changes
+- [x] Added `PartialEq, Eq` derives to `UserRoleClaim` for test assertions
+- [x] Created comprehensive test coverage for JWT operations
+
+---
+
+## Remaining Phases (TODO)
+
+**Target**: 80%+ overall auth feature coverage
+
+### Phase 2: Service Layer Tests (TODO)
+**File**: `backend/tests/auth_service_test.rs`
+**Target Coverage**: 80%+ (365 lines)
+
+#### User Registration (Expand existing)
+- [ ] `test_register_password_hashed_with_argon2` - Verify Argon2 used
+- [ ] `test_register_unique_salt_for_same_password` - Different hashes
+- [ ] `test_register_ontology_entity_created` - Verify User entity
+- [ ] `test_register_email_validation_edge_cases` - Test invalid emails
+- [ ] `test_register_username_validation_edge_cases` - Test invalid usernames
+
+#### User Login (Expand existing)
+- [ ] `test_login_with_email` - Accept email identifier
+- [ ] `test_login_with_username` - Accept username identifier
+- [ ] `test_login_new_device_ip_change` - Detect new IP
+- [ ] `test_login_new_device_user_agent_change` - Detect new UA
+
+#### Token Management
+- [ ] `test_generate_tokens_includes_roles` - Fetch user roles
+- [ ] `test_generate_tokens_includes_permissions` - Fetch permissions
+- [ ] `test_refresh_token_valid` - Successfully refresh
+- [ ] `test_refresh_token_expired` - Reject expired
+- [ ] `test_refresh_token_revoked` - Reject blacklisted
+
+### Phase 3-6: Routes, Security, Concurrency, Integration
+(See detailed breakdown in original TASKS.md placeholder - to be implemented after Phase 2)
+
+---
+
+## User MVP: Password Reset & 2FA Implementation Plan
 
 ## Overview
 This document outlines the implementation plan for the next sprint, focusing on **Password Reset** and **Two-Factor Authentication (2FA)** as required for User MVP release per `requirements_extract.md` §2.

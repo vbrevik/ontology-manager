@@ -80,6 +80,8 @@ pub fn rebac_routes() -> Router<RebacService> {
         .route("/impact/simulate-role", post(simulate_role_change))
         // Access Matrix
         .route("/matrix", post(get_access_matrix))
+        .route("/matrix/roles", get(get_role_permission_matrix))
+        .route("/matrix/update", post(batch_update_role_permissions))
 }
 
 #[derive(Debug, Deserialize)]
@@ -151,7 +153,7 @@ async fn update_role_schedule(
     Path(id): Path<Uuid>,
     Json(input): Json<UpdateScheduleRequest>,
 ) -> Result<Json<ScopedUserRole>, StatusCode> {
-    svc.update_role_schedule(id, input.schedule_cron)
+    svc.update_role_schedule(id, input.schedule_cron, input.valid_from, input.valid_until)
         .await
         .map(Json)
         .map_err(|e| {
@@ -183,10 +185,10 @@ async fn check_permission(
         user_id: query.user_id,
         entity_id: query.entity_id,
         permission: query.permission,
-        allowed: result.has_permission.unwrap_or(false),
+        allowed: result.has_permission,
         reason: if result.is_denied.unwrap_or(false) {
             "Explicitly denied".to_string()
-        } else if result.has_permission.unwrap_or(false) {
+        } else if result.has_permission {
             format!(
                 "Granted via role '{}'{}",
                 result.granted_via_role.unwrap_or_default(),
@@ -271,7 +273,7 @@ async fn get_role_permission_mappings(
 async fn get_role_permissions(
     State(svc): State<RebacService>,
     Path(role_id): Path<Uuid>,
-) -> Result<Json<Vec<String>>, StatusCode> {
+) -> Result<Json<Vec<crate::features::abac::models::Permission>>, StatusCode> {
     svc.get_role_permissions(role_id)
         .await
         .map(Json)
@@ -514,5 +516,27 @@ async fn simulate_role_change(
         .map_err(|e| {
             tracing::error!("Impact simulation failed: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
+        })
+}
+
+async fn get_role_permission_matrix(
+    State(svc): State<RebacService>,
+) -> Result<Json<RolePermissionMatrix>, StatusCode> {
+    svc.get_full_role_permission_matrix(None)
+        .await
+        .map(Json)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+}
+
+async fn batch_update_role_permissions(
+    State(svc): State<RebacService>,
+    Json(input): Json<BatchUpdateRolePermissionsInput>,
+) -> Result<StatusCode, StatusCode> {
+    svc.batch_update_role_permissions(input)
+        .await
+        .map(|_| StatusCode::NO_CONTENT)
+        .map_err(|e| {
+            tracing::error!("Batch update failed: {}", e);
+            StatusCode::BAD_REQUEST
         })
 }

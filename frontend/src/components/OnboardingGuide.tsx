@@ -49,7 +49,7 @@ export const OnboardingGuide = () => {
     const currentStep = steps[step]
 
     return (
-        <Dialog open={open} onOpenChange={(val) => !val && handleComplete()}>
+        <Dialog open={open} onOpenChange={(val: boolean) => !val && handleComplete()}>
             <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                     <div className="flex justify-center">{currentStep.icon}</div>

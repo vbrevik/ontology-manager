@@ -40,7 +40,7 @@ import { ChevronRight } from "lucide-react"
 
 export function Header() {
   const { setTheme, theme } = useTheme()
-  const { logout, user } = useAuth()
+  const { logout } = useAuth()
   const navigate = useNavigate()
   const [openKey, setOpenKey] = useState<string | null>(null)
 

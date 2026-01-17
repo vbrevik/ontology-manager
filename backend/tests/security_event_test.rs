@@ -35,13 +35,6 @@ async fn test_security_event_graph_creation(pool: PgPool) {
     .expect("Failed to create user entity");
 
     // Create a dummy user in 'users' table because AuditServiceFK constraint requires it
-    sqlx::query!(
-        "INSERT INTO users (id, username, email, password_hash) VALUES ($1, 'test_actor', 'test@actor', 'hash')",
-        user_id
-    )
-    .execute(&pool)
-    .await
-    .expect("Failed to create user");
 
     // 2. Perform Action (Log)
     let action = "TEST_LOGIN_SUCCESS";
@@ -131,12 +124,6 @@ async fn test_security_event_target_relationship(pool: PgPool) {
     .execute(&pool)
     .await.unwrap();
 
-    sqlx::query!(
-        "INSERT INTO users (id, username, email, password_hash) VALUES ($1, 'test_actor2', 'test2@actor', 'hash')",
-        user_id
-    )
-    .execute(&pool)
-    .await.unwrap();
 
     // Create Target Entity (e.g., a Context/Mission)
     let target_id = Uuid::new_v4();

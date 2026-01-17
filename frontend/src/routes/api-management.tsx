@@ -133,7 +133,7 @@ function ApiManagementPage() {
                                     <CardTitle>Active API Keys</CardTitle>
                                     <CardDescription>Keys used to authenticate requests to the API</CardDescription>
                                 </div>
-                                <Dialog open={showNewKeyDialog} onOpenChange={(open) => {
+                                <Dialog open={showNewKeyDialog} onOpenChange={(open: boolean) => {
                                     if (!open) setGeneratedKey(null)
                                     setShowNewKeyDialog(open)
                                 }}>

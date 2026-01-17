@@ -13,14 +13,6 @@ async fn test_policy_engine_integration_flow(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // 1. Setup User and User Entity
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind("policy_user@test.com")
-        .bind("policy_user")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     let user_class = services
         .ontology_service
@@ -264,11 +256,15 @@ async fn test_policy_dynamic_keyword_access(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // 1. Setup User
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
+    // Create VIP User Entity
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    sqlx::query("INSERT INTO entities (id, class_id, display_name, attributes, approval_status) VALUES ($1, $2, $3, $4, 'APPROVED')")
         .bind(user_id)
-        .bind("vip@test.com")
+        .bind(user_class_id)
         .bind("vip")
-        .bind("dummy")
+        .bind(serde_json::json!({"username": "vip", "email": "vip@test.com"}))
         .execute(&pool)
         .await
         .unwrap();

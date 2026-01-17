@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { ShieldAlert, Server, Activity, ChevronRight, RefreshCw } from 'lucide-react'
+import { ShieldAlert, Server, ChevronRight, RefreshCw } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useAbac } from '@/features/abac/lib/abac'
 import { Badge } from '@/components/ui/badge'

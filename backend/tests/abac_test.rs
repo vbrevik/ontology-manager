@@ -9,14 +9,6 @@ async fn test_abac_global_permission(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // 1. Setup User
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind("abac@e.com")
-        .bind("abac_u")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
 
     // Create User Entity (needed for relationship constraints in some paths, though ABAC global check might just use ID)
     let user_class = services
@@ -115,14 +107,6 @@ async fn test_abac_resource_permission(pool: PgPool) {
     let user_id = Uuid::new_v4();
 
     // Setup User
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
-        .bind(user_id)
-        .bind("abac2@e.com")
-        .bind("abac2")
-        .bind("dummy")
-        .execute(&pool)
-        .await
-        .unwrap();
     let user_class = services
         .ontology_service
         .get_system_class("User")
@@ -244,3 +228,4 @@ async fn test_abac_resource_permission(pool: PgPool) {
         "User should NOT have 'edit' permission on OtherFile"
     );
 }
+

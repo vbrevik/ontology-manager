@@ -17,14 +17,17 @@ async fn test_create_class_and_entity(pool: PgPool) {
     // Hash password (dummy)
     let password_hash = "dummy_hash";
 
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    sqlx::query("INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
-        .bind(email)
-        .bind(username)
-        .bind(password_hash)
+        .bind(user_class_id)
+        .bind(&username)
+        .bind(serde_json::json!({"username": username, "email": email}))
         .execute(&pool)
         .await
-        .expect("Failed to create dummy user");
+        .expect("Failed to create dummy user entity");
 
     // 1. Create a Class
     let class_input = CreateClassInput {
@@ -66,14 +69,20 @@ async fn test_relationship_creation(pool: PgPool) {
     let user_id = uuid::Uuid::new_v4();
 
     // Create dummy user
-    sqlx::query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)")
+    let user_class_id = sqlx::query_scalar!("SELECT id FROM classes WHERE name = 'User' LIMIT 1")
+        .fetch_one(&pool).await.expect("User class not found");
+
+    let username = format!("rel_user_{}", user_id.simple());
+    let email = format!("rel_test_{}@example.com", user_id);
+
+    sqlx::query("INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)")
         .bind(user_id)
-        .bind(format!("rel_test_{}@example.com", user_id))
-        .bind(format!("rel_user_{}", user_id.simple()))
-        .bind("dummy_hash")
+        .bind(user_class_id)
+        .bind(&username)
+        .bind(serde_json::json!({"username": username, "email": email}))
         .execute(&pool)
         .await
-        .expect("Failed to create dummy user");
+        .expect("Failed to create dummy user entity");
 
     // 1. Create Classes
     let source_class = services

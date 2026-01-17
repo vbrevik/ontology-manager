@@ -58,12 +58,13 @@ impl FirefighterService {
         user_agent: Option<String>,
     ) -> Result<FirefighterSession, FirefighterError> {
         // 1. Find user and verify password
-        let user = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        let user = sqlx::query_as::<_, User>("SELECT * FROM unified_users WHERE id = $1")
             .bind(user_id)
             .fetch_one(&self.pool)
             .await?;
 
-        let parsed_hash = PasswordHash::new(&user.password_hash)
+        let password_hash = user.password_hash.as_deref().ok_or(FirefighterError::InvalidCredentials)?;
+        let parsed_hash = PasswordHash::new(password_hash)
             .map_err(|_| FirefighterError::InvalidCredentials)?;
 
         if Argon2::default()

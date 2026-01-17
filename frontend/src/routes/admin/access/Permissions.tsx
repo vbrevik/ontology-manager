@@ -8,16 +8,6 @@ import {
     type PermissionType
 } from '@/features/ontology/lib/api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -52,7 +42,6 @@ function PermissionsPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [newType, setNewType] = useState({ name: '', description: '', level: 10 });
-    const [permissionToDelete, setPermissionToDelete] = useState<PermissionType | null>(null);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -92,17 +81,11 @@ function PermissionsPage() {
         }
     }
 
-    const handleDeleteClick = (perm: PermissionType) => {
-        setPermissionToDelete(perm);
-    };
-
-    const confirmDelete = async () => {
-        if (!permissionToDelete) return;
-
+    async function handleDelete(id: string) {
+        if (!confirm("Are you sure you want to delete this permission type?")) return;
         try {
-            await deletePermissionType(permissionToDelete.id);
-            setTypes(types.filter(t => t.id !== permissionToDelete.id));
-            setPermissionToDelete(null);
+            await deletePermissionType(id);
+            setTypes(types.filter(t => t.id !== id));
             toast({
                 title: "Deleted",
                 description: "Permission type removed",
@@ -115,7 +98,7 @@ function PermissionsPage() {
                 description: "Failed to delete permission type",
             });
         }
-    };
+    }
 
     async function handleCreate() {
         try {
@@ -240,7 +223,7 @@ function PermissionsPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors ml-2"
-                                        onClick={() => handleDeleteClick(type)}
+                                        onClick={() => handleDelete(type.id)}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

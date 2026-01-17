@@ -136,7 +136,7 @@ pub struct RevokeRoleInput {
 /// Result of a permission check
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct PermissionCheckResult {
-    pub has_permission: Option<bool>,
+    pub has_permission: bool,
     pub granted_via_entity_id: Option<Uuid>,
     pub granted_via_role: Option<String>,
     pub is_inherited: Option<bool>,
@@ -228,4 +228,31 @@ pub struct CronValidationResponse {
 #[derive(Debug, Deserialize)]
 pub struct UpdateScheduleRequest {
     pub schedule_cron: Option<String>,
+    pub valid_from: Option<DateTime<Utc>>,
+    pub valid_until: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RolePermissionMatrix {
+    pub roles: Vec<RolePermissionMatrixEntry>,
+    pub permission_types: Vec<PermissionType>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RolePermissionMatrixEntry {
+    pub role_id: Uuid,
+    pub role_name: String,
+    pub permissions: Vec<String>, // List of permission names
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BatchUpdateRolePermissionsInput {
+    pub updates: Vec<RolePermissionUpdate>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RolePermissionUpdate {
+    pub role_id: Uuid,
+    pub permission: String,
+    pub grant: bool, // true = grant, false = revoke
 }

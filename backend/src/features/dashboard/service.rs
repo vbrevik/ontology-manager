@@ -16,13 +16,13 @@ impl DashboardService {
     }
 
     pub async fn get_dashboard_stats(&self) -> Result<DashboardStats, String> {
-        let total_users: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users")
+        let total_users: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM unified_users")
             .fetch_one(&self.pool)
             .await
             .map_err(|e| e.to_string())?;
 
         let active_refresh_tokens: i64 = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM refresh_tokens WHERE revoked_at IS NULL AND expires_at > NOW()",
+            "SELECT COUNT(*) FROM unified_refresh_tokens WHERE expires_at > NOW()",
         )
         .fetch_one(&self.pool)
         .await
@@ -36,7 +36,7 @@ impl DashboardService {
 
     pub async fn get_recent_activity(&self, limit: i64) -> Result<Vec<ActivityEntry>, String> {
         let users =
-            sqlx::query_as::<_, User>("SELECT * FROM users ORDER BY created_at DESC LIMIT $1")
+            sqlx::query_as::<_, User>("SELECT * FROM unified_users ORDER BY created_at DESC LIMIT $1")
                 .bind(limit)
                 .fetch_all(&self.pool)
                 .await
@@ -58,12 +58,12 @@ impl DashboardService {
         let last_month = now - Duration::days(30);
 
         // 1. Total Users
-        let total_users: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users")
+        let total_users: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM unified_users")
             .fetch_one(&self.pool)
             .await
             .map_err(|e| e.to_string())?;
         let users_last_month: i64 =
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM users WHERE created_at < $1")
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM unified_users WHERE created_at < $1")
                 .bind(last_month)
                 .fetch_one(&self.pool)
                 .await
@@ -76,12 +76,17 @@ impl DashboardService {
         };
 
         // 2. Active Roles
-        let active_roles: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM roles")
+        let role_class_id: uuid::Uuid = sqlx::query_scalar("SELECT id FROM classes WHERE name = 'Role' LIMIT 1")
+            .fetch_one(&self.pool).await.map_err(|e| e.to_string())?;
+
+        let active_roles: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM entities WHERE class_id = $1 AND deleted_at IS NULL")
+            .bind(role_class_id)
             .fetch_one(&self.pool)
             .await
             .map_err(|e| e.to_string())?;
         let roles_last_month: i64 =
-            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM roles WHERE created_at < $1")
+            sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM entities WHERE class_id = $1 AND created_at < $2 AND deleted_at IS NULL")
+                .bind(role_class_id)
                 .bind(last_month)
                 .fetch_one(&self.pool)
                 .await
@@ -114,7 +119,7 @@ impl DashboardService {
 
         // 4. Policy Denials (Audit Logs with action 'ACCESS_DENIED')
         let policy_denials: i64 = sqlx::query_scalar::<_, i64>(
-            "SELECT COUNT(*) FROM audit_logs WHERE action = 'ACCESS_DENIED' AND created_at > $1",
+            "SELECT COUNT(*) FROM unified_audit_logs WHERE action = 'ACCESS_DENIED' AND created_at > $1",
         )
         .bind(last_month)
         .fetch_one(&self.pool)
@@ -122,7 +127,7 @@ impl DashboardService {
         .map_err(|e| e.to_string())?;
 
         let two_months_ago = now - Duration::days(60);
-        let prev_denials: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM audit_logs WHERE action = 'ACCESS_DENIED' AND created_at BETWEEN $1 AND $2")
+        let prev_denials: i64 = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM unified_audit_logs WHERE action = 'ACCESS_DENIED' AND created_at BETWEEN $1 AND $2")
              .bind(two_months_ago)
              .bind(last_month)
              .fetch_one(&self.pool).await.map_err(|e| e.to_string())?;
@@ -141,7 +146,7 @@ impl DashboardService {
                 DATE(created_at) as day,
                 COUNT(*) FILTER (WHERE action = 'ACCESS_GRANTED' OR action = 'ACCESS_ALLOWED') as granted,
                 COUNT(*) FILTER (WHERE action = 'ACCESS_DENIED') as denied
-            FROM audit_logs
+            FROM unified_audit_logs
             WHERE created_at > NOW() - INTERVAL '7 days'
             GROUP BY DATE(created_at)
             ORDER BY DATE(created_at)

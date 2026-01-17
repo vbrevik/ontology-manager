@@ -53,13 +53,16 @@
 - [x] HttpOnly cookie token storage
 - [x] Security logging (structured tracing)
 - [x] Remember-me support
-- [x] Password strength indicator UI
+ - [x] Password strength indicator UI
 - [x] Protected routes + idle session warning
 - [x] Profile page with account editing + password change
 - [x] In-app notification for new device login
-- [x] JWT tests (8 passing)
+- [x] JWT module tests (24 passing, 31/38 lines covered - 81.5%)
+- [x] JWT test helpers (jwt_helpers.rs)
+- [x] UserRoleClaim derives PartialEq/Eq for test assertions
 - [x] Auth service tests (5 passing)
 - [x] Auth API tests (10 passing)
+- [x] JWT module coverage >75% achieved
 
 #### In Progress (User MVP)
 - [/] Password reset flow (see TASKS.md)
@@ -119,6 +122,17 @@
 - [x] E2E tests (Playwright)
 - [x] Zero compiler warnings
 - [x] Zero clippy violations
+- [x] JWT module unit tests (24 tests, 81.5% coverage)
+- [x] JWT test helpers module
+- [x] AGENTS.md documentation created
+
+#### In Progress
+- [ ] Backend auth feature test coverage improvement (see TASKS.md Phase 1-6)
+
+#### TODO
+- [ ] Frontend auth feature test coverage improvement
+- [ ] Backend ReBAC feature test coverage improvement
+- [ ] Backend ABAC feature test coverage improvement
 
 ---
 

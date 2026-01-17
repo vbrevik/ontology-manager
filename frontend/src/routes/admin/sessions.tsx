@@ -27,7 +27,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, Laptop, Smartphone, Globe, Trash2, RefreshCw, LogOut } from "lucide-react"
+import { AlertCircle, Laptop, Smartphone, Globe, RefreshCw, LogOut } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
 import {

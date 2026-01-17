@@ -2,8 +2,6 @@ import { render, screen, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthProvider, useAuth } from './context'
 import * as authApi from './auth'
-import React, { useEffect } from 'react'
-import { useRouter } from '@tanstack/react-router'
 import { useNavigate } from '@tanstack/react-router'
 
 // Mock the router
@@ -22,16 +20,14 @@ vi.mock('./auth', () => ({
 }))
 
 // Mock idle timer
-const mockResetTimer = vi.fn()
-let triggerOnWarning: (() => void) | null = null
 let triggerOnLogout: (() => void) | null = null
 let mockShowWarning = false
+const mockResetTimer = vi.fn()
 
 vi.mock('@/hooks/useIdleTimer', () => ({
-    useIdleTimer: ({ onWarning, onLogout, enabled }: any) => {
+    useIdleTimer: ({ onLogout, enabled }: any) => {
         // Capture callbacks to trigger them in tests
         if (enabled) {
-            triggerOnWarning = onWarning
             triggerOnLogout = onLogout
         }
         return {
@@ -239,7 +235,6 @@ describe('AuthProvider', () => {
     describe('Session Management', () => {
         beforeEach(() => {
             // Reset triggers
-            triggerOnWarning = null
             triggerOnLogout = null
             mockShowWarning = false
         })

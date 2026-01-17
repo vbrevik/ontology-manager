@@ -118,11 +118,102 @@ export const abacApi = {
         return response.json();
     },
 
+
     removeRole: async (assignmentId: string): Promise<void> => {
         const response = await fetch(`/api/abac/users/roles/${assignmentId}`, {
             method: 'DELETE',
             credentials: 'include'
         });
         if (!response.ok) throw new Error('Failed to remove role assignment');
+    },
+
+    // Matrix
+    getRolePermissionMatrix: async (): Promise<RolePermissionMatrix> => {
+        const response = await fetch('/api/rebac/matrix/roles', { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch permission matrix');
+        return response.json();
+    },
+
+    batchUpdateRolePermissions: async (updates: RolePermissionUpdate[]): Promise<void> => {
+        const response = await fetch('/api/rebac/matrix/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates }),
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Failed to update permissions');
+    },
+
+    // Impact Analysis
+    simulateRoleChange: async (input: SimulateRoleChangeInput): Promise<ImpactReport> => {
+        const response = await fetch('/api/rebac/impact/simulate-role', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(input),
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Failed to simulate role change');
+        return response.json();
+    },
+
+    updateRoleSchedule: async (assignmentId: string, data: UpdateScheduleRequest): Promise<void> => {
+        const response = await fetch(`/api/rebac/users/roles/${assignmentId}/schedule`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('Failed to update schedule');
     }
 };
+
+export interface RolePermissionMatrix {
+    roles: RolePermissionMatrixEntry[];
+    permission_types: PermissionType[];
+}
+
+export interface RolePermissionMatrixEntry {
+    role_id: string;
+    role_name: string;
+    permissions: string[];
+}
+
+export interface PermissionType {
+    id: string;
+    name: string;
+    description?: string;
+    level: number;
+}
+
+
+export interface RolePermissionUpdate {
+    role_id: string;
+    permission: string;
+    grant: boolean;
+}
+
+export interface UserImpact {
+    user_id: string;
+    display_name?: string;
+    email?: string;
+    details: string;
+}
+
+export interface ImpactReport {
+    affected_users_count: number;
+    gained_access: UserImpact[];
+    lost_access: UserImpact[];
+}
+
+export interface SimulateRoleChangeInput {
+    role_id: string;
+    added_permissions: string[];
+    removed_permissions: string[];
+}
+
+export interface UpdateScheduleRequest {
+    schedule_cron?: string;
+    valid_from?: string; // ISO string
+    valid_until?: string; // ISO string
+}
+

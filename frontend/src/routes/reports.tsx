@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText, Calendar, Plus, ExternalLink, Loader2 } from 'lucide-react'
+import { Download, FileText, Calendar, ExternalLink, Loader2 } from 'lucide-react'
 import { fetchGeneratedReports, generateReport, type GeneratedReport } from '@/features/system/lib/api'
 
 export const Route = createFileRoute('/reports')({

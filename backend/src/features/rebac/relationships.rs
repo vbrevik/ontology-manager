@@ -64,7 +64,7 @@ impl RebacService {
     // ROLE PERMISSIONS (via Relationships)
     // ========================================================================
 
-    pub async fn get_role_permissions(&self, role_id: Uuid) -> Result<Vec<String>, RebacError> {
+    pub async fn get_role_permissions(&self, role_id: Uuid) -> Result<Vec<crate::features::abac::models::Permission>, RebacError> {
         let rel_types = self.list_relationship_types().await?;
         let rel_type = rel_types
             .into_iter()
@@ -75,9 +75,9 @@ impl RebacService {
                 )
             })?;
 
-        let perms = sqlx::query_scalar::<_, String>(
+        let perms = sqlx::query_as::<_, crate::features::abac::models::Permission>(
             r#"
-            SELECT e.display_name
+            SELECT r.id, r.source_entity_id as role_id, e.display_name as action, r.created_at
             FROM relationships r
             JOIN entities e ON r.target_entity_id = e.id
             WHERE r.source_entity_id = $1 AND r.relationship_type_id = $2

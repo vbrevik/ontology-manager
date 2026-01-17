@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -8,7 +8,6 @@ import {
   GitCommit,
   Clock,
   RotateCcw,
-  ArrowRight,
   CheckCircle2,
   History,
   FileDiff,
@@ -83,7 +82,7 @@ function VersionsPage() {
           <div className="absolute left-6 top-0 bottom-0 w-px bg-border/50" />
 
           <div className="space-y-6">
-            {versions.map((version, index) => (
+            {versions.map((version) => (
               <div key={version.id} className="relative pl-14 group">
                 {/* Timeline Dot */}
                 <div className={cn(
