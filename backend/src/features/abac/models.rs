@@ -1,7 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Represents an area/scope within the application (e.g., a project, team, module)
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]

@@ -1,23 +1,30 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Terminal, LogOut, User, Sun, Moon } from 'lucide-react'
+import { Terminal, LogOut, User, Sun, Moon, Flame } from 'lucide-react'
+import { getFirefighterStatus, type FirefighterStatus } from '@/features/firefighter/lib/api'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/lib/context'
 import Notifications from '@/components/Notifications'
 import { useState, useEffect, useRef } from 'react'
 
 export function Navbar() {
-    const { isAuthenticated, logout, user } = useAuth()
+    const { isAuthenticated, logout, user, hasPermission } = useAuth()
     const navigate = useNavigate()
-    const [username, setUsername] = useState<string | null>(null)
     const [theme, setTheme] = useState<'light' | 'dark'>('light')
     const [menuOpen, setMenuOpen] = useState(false)
+    const [firefighterStatus, setFirefighterStatus] = useState<FirefighterStatus | null>(null)
     const menuRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        if (isAuthenticated && user) {
-            setUsername(user.username)
+        if (isAuthenticated) {
+            getFirefighterStatus().then(setFirefighterStatus).catch(console.error);
+
+            const interval = setInterval(() => {
+                getFirefighterStatus().then(setFirefighterStatus).catch(console.error);
+            }, 10000); // Poll every 10 seconds
+
+            return () => clearInterval(interval);
         }
-    }, [isAuthenticated, user])
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -64,6 +71,12 @@ export function Navbar() {
                         <span className="text-[10px] text-muted-foreground font-normal leading-none">v{import.meta.env.PACKAGE_VERSION || '0.2.0'}</span>
                     </div>
                 </Link>
+                {firefighterStatus?.is_active && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold uppercase tracking-wider animate-pulse ml-2">
+                        <Flame size={10} className="fill-orange-600/20" />
+                        Firefighter Active
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-4">
@@ -87,9 +100,9 @@ export function Navbar() {
                                 className="flex items-center gap-2 rounded-full border border-border/60 pl-1 pr-1.5 py-1 hover:bg-muted/50 transition-all active:scale-95"
                             >
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center text-primary-foreground text-xs font-bold uppercase shadow-sm">
-                                    {username?.substring(0, 2) || 'U'}
+                                    {user?.username?.substring(0, 2) || 'U'}
                                 </div>
-                                <span className="hidden sm:inline font-medium text-sm pr-1">{username}</span>
+                                <span className="hidden sm:inline font-medium text-sm pr-1">{user?.username}</span>
                             </button>
 
                             {menuOpen && (
@@ -97,7 +110,7 @@ export function Navbar() {
                                     <div className="px-3 py-2 border-b border-border/40 mb-1">
                                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none mb-1.5 px-0.5">Account Info</p>
                                         <div className="flex items-center gap-2">
-                                            <div className="text-sm font-semibold truncate leading-none">{username}</div>
+                                            <div className="text-sm font-semibold truncate leading-none">{user?.username}</div>
                                         </div>
                                     </div>
                                     <div className="grid gap-1">
@@ -109,14 +122,16 @@ export function Navbar() {
                                             <User className="mr-2 h-4 w-4 text-muted-foreground" />
                                             Profile Settings
                                         </Link>
-                                        <Link
-                                            to="/admin"
-                                            className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                                            onClick={() => setMenuOpen(false)}
-                                        >
-                                            <Terminal className="mr-2 h-4 w-4 text-muted-foreground" />
-                                            Administration
-                                        </Link>
+                                        {hasPermission('ui.view.dashboard') && (
+                                            <Link
+                                                to="/admin"
+                                                className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                                                onClick={() => setMenuOpen(false)}
+                                            >
+                                                <Terminal className="mr-2 h-4 w-4 text-muted-foreground" />
+                                                Administration
+                                            </Link>
+                                        )}
                                         <Link
                                             to="/debug"
                                             className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"

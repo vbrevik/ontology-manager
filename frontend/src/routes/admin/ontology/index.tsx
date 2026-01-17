@@ -55,7 +55,7 @@ function OntologyOverview() {
             icon: Layers,
             color: "text-blue-500",
             bg: "bg-blue-500/10",
-            href: "/admin/ontology/classes"
+            href: "/admin/ontology/Classes"
         },
         {
             title: "Relationship Types",
@@ -64,7 +64,7 @@ function OntologyOverview() {
             icon: Share2,
             color: "text-orange-500",
             bg: "bg-orange-500/10",
-            href: "/admin/ontology/relationships"
+            href: "/admin/ontology/Relationships"
         },
         {
             title: "Permission Levels",
@@ -154,12 +154,12 @@ function OntologyOverview() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 gap-3">
                         <Button variant="outline" className="justify-start hover:bg-orange-500/5 hover:border-orange-500/20" asChild>
-                            <Link to="/admin/ontology/classes">
+                            <Link to="/admin/ontology/Classes">
                                 <Plus className="mr-2 h-4 w-4 text-orange-500" /> New Ontological Class
                             </Link>
                         </Button>
                         <Button variant="outline" className="justify-start hover:bg-rose-500/5 hover:border-rose-500/20" asChild>
-                            <Link to="/admin/ontology/relationships">
+                            <Link to="/admin/ontology/Relationships">
                                 <Plus className="mr-2 h-4 w-4 text-rose-500" /> Define Relationship
                             </Link>
                         </Button>

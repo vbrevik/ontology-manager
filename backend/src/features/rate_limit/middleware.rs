@@ -8,8 +8,8 @@ use axum::{
 use serde_json::json;
 use std::sync::Arc;
 
-use crate::features::rate_limit::service::RateLimitService;
 use crate::features::auth::jwt::Claims;
+use crate::features::rate_limit::service::RateLimitService;
 
 #[allow(dead_code)]
 const BYPASS_HEADER: &str = "x-test-rate-limit-bypass";
@@ -24,14 +24,20 @@ pub async fn rate_limit_middleware(
     // Check for bypass token in headers
     if let Some(token) = headers.get(BYPASS_HEADER) {
         if let Ok(token_str) = token.to_str() {
-            if rate_limit_service.verify_bypass_token(token_str).await.unwrap_or(false) {
+            if rate_limit_service
+                .verify_bypass_token(token_str)
+                .await
+                .unwrap_or(false)
+            {
                 return next.run(request).await;
             }
         }
     }
 
     // Extract user ID from JWT claims if present (for user-based limiting)
-    let user_id = request.extensions().get::<Claims>()
+    let user_id = request
+        .extensions()
+        .get::<Claims>()
         .map(|claims| claims.sub.clone());
 
     // Extract IP address (for IP-based limiting)
@@ -39,11 +45,7 @@ pub async fn rate_limit_middleware(
         .get("x-forwarded-for")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.split(',').next())
-        .or_else(|| {
-            headers
-                .get("x-real-ip")
-                .and_then(|h| h.to_str().ok())
-        })
+        .or_else(|| headers.get("x-real-ip").and_then(|h| h.to_str().ok()))
         .unwrap_or("unknown")
         .to_string();
 
@@ -54,7 +56,10 @@ pub async fn rate_limit_middleware(
     let (rule_id, identifier) = determine_rule_and_identifier(path, method, user_id, &ip);
 
     // Check rate limit
-    match rate_limit_service.check_rate_limit(&rule_id, &identifier).await {
+    match rate_limit_service
+        .check_rate_limit(&rule_id, &identifier)
+        .await
+    {
         Ok(()) => {
             // Request allowed
             next.run(request).await
@@ -69,15 +74,13 @@ pub async fn rate_limit_middleware(
 
             (
                 StatusCode::TOO_MANY_REQUESTS,
-                [(
-                    "Retry-After",
-                    retry_after.to_string()
-                ), (
-                    "X-RateLimit-Rule",
-                    rule_id
-                )],
+                [
+                    ("Retry-After", retry_after.to_string()),
+                    ("X-RateLimit-Rule", rule_id),
+                ],
                 Json(response_body),
-            ).into_response()
+            )
+                .into_response()
         }
     }
 }

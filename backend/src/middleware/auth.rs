@@ -1,13 +1,13 @@
+use crate::config::Config;
+use crate::features::auth::jwt::validate_jwt;
+use axum::http::header::AUTHORIZATION;
 use axum::{
     async_trait,
     extract::FromRequestParts,
     http::{request::Parts, StatusCode},
-    response::{Response, IntoResponse},
+    response::{IntoResponse, Response},
     Json,
 };
-use axum::http::header::AUTHORIZATION;
-use crate::features::auth::jwt::validate_jwt;
-use crate::config::Config;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -31,28 +31,33 @@ where
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         // Try to get token from authorization header first
         let token = if let Some(auth_header) = parts.headers.get(AUTHORIZATION) {
-            auth_header.to_str()
+            auth_header
+                .to_str()
                 .map_err(|_| AuthError::InvalidToken)?
                 .strip_prefix("Bearer ")
                 .ok_or(AuthError::InvalidToken)?
                 .to_string()
         } else {
             // Fallback to cookie
-            let cookies = parts.extensions.get::<tower_cookies::Cookies>()
+            let cookies = parts
+                .extensions
+                .get::<tower_cookies::Cookies>()
                 .ok_or(AuthError::MissingConfig)?;
-            cookies.get("access_token")
+            cookies
+                .get("access_token")
                 .map(|c| c.value().to_string())
                 .ok_or(AuthError::MissingToken)?
         };
 
         // Get config from extensions
-        let config = parts.extensions.get::<Arc<Config>>()
+        let config = parts
+            .extensions
+            .get::<Arc<Config>>()
             .ok_or(AuthError::MissingConfig)?
             .clone();
 
         // Validate token
-        let claims = validate_jwt(&token, &config)
-            .map_err(|_| AuthError::InvalidToken)?;
+        let claims = validate_jwt(&token, &config).map_err(|_| AuthError::InvalidToken)?;
 
         // Store claims in extensions for later use
         parts.extensions.insert(claims);
@@ -66,31 +71,36 @@ pub async fn auth_middleware(
     next: axum::middleware::Next,
 ) -> Result<Response, AuthError> {
     let (mut parts, body) = req.into_parts();
-    
+
     // We use the extractor logic here
     let token = if let Some(auth_header) = parts.headers.get(AUTHORIZATION) {
-        auth_header.to_str()
+        auth_header
+            .to_str()
             .map_err(|_| AuthError::InvalidToken)?
             .strip_prefix("Bearer ")
             .ok_or(AuthError::InvalidToken)?
             .to_string()
     } else {
         // Fallback to cookie
-        let cookies = parts.extensions.get::<tower_cookies::Cookies>()
+        let cookies = parts
+            .extensions
+            .get::<tower_cookies::Cookies>()
             .ok_or(AuthError::MissingConfig)?;
-        cookies.get("access_token")
+        cookies
+            .get("access_token")
             .map(|c| c.value().to_string())
             .ok_or(AuthError::MissingToken)?
     };
 
     // Get config from extensions
-    let config = parts.extensions.get::<Arc<Config>>()
+    let config = parts
+        .extensions
+        .get::<Arc<Config>>()
         .ok_or(AuthError::MissingConfig)?
         .clone();
 
     // Validate token
-    let claims = validate_jwt(&token, &config)
-        .map_err(|_| AuthError::InvalidToken)?;
+    let claims = validate_jwt(&token, &config).map_err(|_| AuthError::InvalidToken)?;
 
     // Store claims in extensions for later use
     parts.extensions.insert(claims);
@@ -130,7 +140,10 @@ impl IntoResponse for AuthError {
             AuthError::MissingToken => (StatusCode::UNAUTHORIZED, "Missing authorization token"),
             AuthError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid authorization token"),
             AuthError::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
-            AuthError::MissingConfig => (StatusCode::INTERNAL_SERVER_ERROR, "Server configuration error"),
+            AuthError::MissingConfig => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Server configuration error",
+            ),
         };
 
         (status, Json(serde_json::json!({ "error": message }))).into_response()
@@ -139,7 +152,9 @@ impl IntoResponse for AuthError {
 
 // Extract user from request extensions
 pub fn get_user_from_request(parts: &Parts) -> Result<User, AuthError> {
-    let claims = parts.extensions.get::<crate::features::auth::jwt::Claims>()
+    let claims = parts
+        .extensions
+        .get::<crate::features::auth::jwt::Claims>()
         .ok_or(AuthError::MissingConfig)?
         .clone();
 

@@ -1,22 +1,19 @@
-use axum::{
-    routing::{get, post},
-    Json, Router, extract::{State, Path},
-    http::StatusCode,
-};
+use super::models::{CreateReportRequest, GeneratedReport, SystemMetricsResponse};
 use super::service::SystemService;
-use super::models::{SystemMetricsResponse, GeneratedReport, CreateReportRequest};
 use crate::features::auth::models::AuditLog;
+use axum::{extract::State, http::StatusCode, routing::get, Json, Router};
 
 pub fn system_routes() -> Router<SystemService> {
     Router::new()
         .route("/metrics", get(get_system_metrics))
         .route("/logs", get(get_system_logs))
-        .route("/reports", get(get_system_reports).post(generate_system_report))
+        .route(
+            "/reports",
+            get(get_system_reports).post(generate_system_report),
+        )
 }
 
-async fn get_system_metrics(
-    State(service): State<SystemService>,
-) -> Json<SystemMetricsResponse> {
+async fn get_system_metrics(State(service): State<SystemService>) -> Json<SystemMetricsResponse> {
     let metrics = service.get_metrics();
     Json(metrics)
 }

@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { ScheduleEditor } from '@/components/ScheduleEditor'
+import { abacApi, type Role, type Resource } from '@/features/abac/lib/api'
+import { Plus } from 'lucide-react'
 
 export const Route = createFileRoute('/admin/schedules')({
     component: SchedulesPage,
@@ -29,9 +31,32 @@ function SchedulesPage() {
     const [error, setError] = useState<string | null>(null)
     const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
+    const [allRoles, setAllRoles] = useState<Role[]>([])
+    const [allResources, setAllResources] = useState<Resource[]>([])
+    const [isAssigning, setIsAssigning] = useState(false)
+    const [newAssignment, setNewAssignment] = useState({
+        roleId: '',
+        resourceId: '',
+        schedule: ''
+    })
+
     useEffect(() => {
         fetchUsers()
+        fetchCommonData()
     }, [])
+
+    async function fetchCommonData() {
+        try {
+            const [rolesData, resourcesData] = await Promise.all([
+                abacApi.listRoles(),
+                abacApi.listResources()
+            ])
+            setAllRoles(rolesData)
+            setAllResources(resourcesData)
+        } catch (err) {
+            console.error('Failed to fetch roles/resources', err)
+        }
+    }
 
     useEffect(() => {
         if (selectedUserId) {
@@ -69,7 +94,7 @@ function SchedulesPage() {
     }
 
     async function updateSchedule(roleId: string, schedule: string | null) {
-        setIsLoading(true)
+        // Don't set global isLoading to avoid UI flicker
         setError(null)
         try {
             const res = await fetch(`/api/rebac/users/roles/${roleId}/schedule`, {
@@ -80,8 +105,14 @@ function SchedulesPage() {
             })
             if (res.ok) {
                 setSuccessMessage('Schedule updated successfully')
-                // Refresh roles
-                if (selectedUserId) fetchUserRoles(selectedUserId)
+                // Refresh roles without full reload state
+                if (selectedUserId) {
+                    const refreshRes = await fetch(`/api/rebac/users/${selectedUserId}/roles`, { credentials: 'include' })
+                    if (refreshRes.ok) {
+                        const data = await refreshRes.json()
+                        setRoles(data)
+                    }
+                }
                 setSelectedRole(null)
                 setTimeout(() => setSuccessMessage(null), 3000)
             } else {
@@ -90,6 +121,37 @@ function SchedulesPage() {
             }
         } catch (err) {
             setError('Failed to update schedule')
+        }
+    }
+
+    async function handleAssignRole() {
+        if (!selectedUserId || !newAssignment.roleId) return
+
+        setIsLoading(true)
+        try {
+            const res = await fetch(`/api/rebac/users/${selectedUserId}/roles`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    role_id: newAssignment.roleId,
+                    scope_entity_id: newAssignment.resourceId || null,
+                    schedule_cron: newAssignment.schedule || null
+                })
+            })
+
+            if (res.ok) {
+                setSuccessMessage('Role assigned successfully')
+                setIsAssigning(false)
+                setNewAssignment({ roleId: '', resourceId: '', schedule: '' })
+                fetchUserRoles(selectedUserId)
+                setTimeout(() => setSuccessMessage(null), 3000)
+            } else {
+                const data = await res.json()
+                setError(data.error || 'Failed to assign role')
+            }
+        } catch (err) {
+            setError('Failed to assign role')
         } finally {
             setIsLoading(false)
         }
@@ -261,7 +323,75 @@ function SchedulesPage() {
 
             {selectedUserId && (
                 <div className="schedules-page__section">
-                    <label className="schedules-page__label">Role Assignments</label>
+                    <div className="flex justify-between items-center mb-4">
+                        <label className="schedules-page__label" style={{ marginBottom: 0 }}>Role Assignments</label>
+                        <button
+                            className="schedules-page__btn schedules-page__btn--primary flex items-center gap-2"
+                            onClick={() => setIsAssigning(true)}
+                        >
+                            <Plus size={16} /> Assign Role
+                        </button>
+                    </div>
+
+                    {isAssigning && (
+                        <div className="p-4 mb-6 border border-indigo-500/30 bg-indigo-500/10 rounded-lg animate-in slide-in-from-top-2">
+                            <h3 className="font-semibold mb-4 flex items-center gap-2 text-indigo-400">
+                                <Plus size={16} /> New Role Assignment
+                            </h3>
+                            <div className="grid gap-4 mb-4">
+                                <div>
+                                    <label className="block text-xs uppercase text-muted-foreground mb-1">Role</label>
+                                    <select
+                                        className="schedules-page__select"
+                                        value={newAssignment.roleId}
+                                        onChange={e => setNewAssignment(prev => ({ ...prev, roleId: e.target.value }))}
+                                    >
+                                        <option value="">Select Role...</option>
+                                        {allRoles.map(r => (
+                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase text-muted-foreground mb-1">Scope</label>
+                                    <select
+                                        className="schedules-page__select"
+                                        value={newAssignment.resourceId}
+                                        onChange={e => setNewAssignment(prev => ({ ...prev, resourceId: e.target.value }))}
+                                    >
+                                        <option value="">Global (All Resources)</option>
+                                        {allResources.map(r => (
+                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase text-muted-foreground mb-1">Initial Schedule (Optional)</label>
+                                    <ScheduleEditor
+                                        value={newAssignment.schedule}
+                                        onChange={val => setNewAssignment(prev => ({ ...prev, schedule: val || '' }))}
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    className="schedules-page__btn schedules-page__btn--secondary"
+                                    onClick={() => setIsAssigning(false)}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="schedules-page__btn schedules-page__btn--primary"
+                                    onClick={handleAssignRole}
+                                    disabled={!newAssignment.roleId}
+                                >
+                                    Confirm Assignment
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <label className="schedules-page__label" style={{ display: 'none' }}>Role Assignments</label>
                     {isLoading ? (
                         <div className="schedules-page__empty">Loading...</div>
                     ) : roles.length === 0 ? (

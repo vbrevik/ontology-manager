@@ -1,12 +1,14 @@
+use chrono::Utc;
+use sqlx::PgPool;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
-use sysinfo::{System, Disks, Networks};
-use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::Utc;
+use sysinfo::{Disks, Networks, System};
 
-use super::models::{SystemMetricsResponse, CpuMetrics, LoadAvg, MemoryMetrics, DiskMetrics, NetworkMetrics, GeneratedReport};
 use super::audit_service::AuditService;
+use super::models::{
+    CpuMetrics, DiskMetrics, GeneratedReport, LoadAvg, MemoryMetrics, NetworkMetrics,
+    SystemMetricsResponse,
+};
 use crate::features::auth::models::AuditLog;
 
 #[derive(Clone)]
@@ -26,10 +28,31 @@ impl SystemService {
             os_version: "unknown".to_string(),
             kernel_version: "unknown".to_string(),
             uptime: 0,
-            cpu: CpuMetrics { usage_percent: 0.0, cores: 0, load_avg: LoadAvg { one: 0.0, five: 0.0, fifteen: 0.0 } },
-            memory: MemoryMetrics { total: 0, used: 0, free: 0, usage_percent: 0.0 },
-            disk: DiskMetrics { total: 0, used: 0, free: 0, usage_percent: 0.0 },
-            network: NetworkMetrics { received_bytes: 0, transmitted_bytes: 0 },
+            cpu: CpuMetrics {
+                usage_percent: 0.0,
+                cores: 0,
+                load_avg: LoadAvg {
+                    one: 0.0,
+                    five: 0.0,
+                    fifteen: 0.0,
+                },
+            },
+            memory: MemoryMetrics {
+                total: 0,
+                used: 0,
+                free: 0,
+                usage_percent: 0.0,
+            },
+            disk: DiskMetrics {
+                total: 0,
+                used: 0,
+                free: 0,
+                usage_percent: 0.0,
+            },
+            network: NetworkMetrics {
+                received_bytes: 0,
+                transmitted_bytes: 0,
+            },
         };
 
         let metrics_cache = Arc::new(RwLock::new(initial_metrics));
@@ -40,17 +63,18 @@ impl SystemService {
             let mut sys = System::new_all();
             let mut disks = Disks::new_with_refreshed_list();
             let mut networks = Networks::new_with_refreshed_list();
-            
+
             loop {
                 sys.refresh_all();
                 disks.refresh(true);
                 networks.refresh(true);
-                
+
                 // Host info
                 let hostname = System::host_name().unwrap_or_else(|| "unknown".to_string());
                 let os_name = System::name().unwrap_or_else(|| "unknown".to_string());
                 let os_version = System::os_version().unwrap_or_else(|| "unknown".to_string());
-                let kernel_version = System::kernel_version().unwrap_or_else(|| "unknown".to_string());
+                let kernel_version =
+                    System::kernel_version().unwrap_or_else(|| "unknown".to_string());
                 let uptime = System::uptime();
 
                 // CPU
@@ -61,7 +85,7 @@ impl SystemService {
                 } else {
                     0.0
                 };
-                
+
                 let load = System::load_average();
 
                 // Memory
@@ -151,12 +175,15 @@ impl SystemService {
     }
 
     pub async fn get_logs(&self) -> Result<Vec<AuditLog>, String> {
-        self.audit_service.get_logs().await.map_err(|e| e.to_string())
+        self.audit_service
+            .get_logs()
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn get_reports(&self) -> Result<Vec<GeneratedReport>, String> {
         let reports = sqlx::query_as::<_, GeneratedReport>(
-            "SELECT * FROM generated_reports ORDER BY generated_at DESC"
+            "SELECT * FROM generated_reports ORDER BY generated_at DESC",
         )
         .fetch_all(&self.pool)
         .await
@@ -168,13 +195,13 @@ impl SystemService {
     pub async fn generate_report(&self, report_type: String) -> Result<GeneratedReport, String> {
         // For MVP, we just create a record saying it is completed.
         // In real system, this would trigger a background job.
-        
+
         let report = sqlx::query_as::<_, GeneratedReport>(
             r#"
             INSERT INTO generated_reports (name, report_type, status, size_bytes, generated_at)
             VALUES ($1, $2, 'COMPLETED', $3, $4)
             RETURNING *
-            "#
+            "#,
         )
         .bind(format!("{} Report", report_type))
         .bind(report_type)

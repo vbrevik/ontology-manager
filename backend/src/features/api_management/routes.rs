@@ -1,11 +1,12 @@
+use super::models::{ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, WebhookEndpoint};
+use super::service::ApiManagementService;
 use axum::{
-    routing::{get, post, delete},
-    Json, Router, extract::{State, Path},
+    extract::{Path, State},
     http::StatusCode,
+    routing::{delete, get},
+    Json, Router,
 };
 use uuid::Uuid;
-use super::service::ApiManagementService;
-use super::models::{ApiKey, CreateApiKeyRequest, CreateApiKeyResponse, WebhookEndpoint};
 
 pub fn api_management_routes() -> Router<ApiManagementService> {
     Router::new()

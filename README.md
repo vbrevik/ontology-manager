@@ -91,6 +91,36 @@ The project is built as a modern full-stack application:
 - **CSRF Protection**: Double-submit cookie pattern implemented.
 - **Input Validation**: Strictly typed schemas using Serde (Backend) and Zod (Frontend).
 
+## 🧪 Testing
+
+### Backend Tests
+Run the 42+ backend integration tests:
+```bash
+cd backend
+export DATABASE_URL=postgres://app:app_password@localhost:5301/app_db
+cargo test
+```
+
+### End-to-End Tests (Playwright)
+Playwright E2E tests cover auth flows, ontology roles, AI health, and navigation.
+
+**Prerequisites**: Backend running on `http://localhost:5300`, Frontend on `http://localhost:5373`.
+
+```bash
+cd frontend
+npm run test:e2e
+```
+
+**Test Coverage**:
+- `e2e-auth.spec.ts`: Register and login flows
+- `change-password.spec.ts`: Password change flow
+- `ontology-roles.spec.ts`: ABAC/ReBAC role verification
+- `ai-health.spec.ts`: AI provider status
+- `navigation-simulator.spec.ts`: Navigation impact UI
+- `navigation-eval.spec.ts`: Navigation evaluation API
+
+> **Note**: Tests create timestamped users to avoid collisions. The backend's test cleanup endpoint (`POST /api/auth/test/cleanup`) requires `ENABLE_TEST_ENDPOINTS=true`.
+
 ## 🤝 Contributing
 
 1. Fork the repository

@@ -1,16 +1,19 @@
-use std::sync::Arc;
+use crate::features::rate_limit::models::*;
+use sqlx::PgPool;
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use sqlx::PgPool;
-use crate::features::rate_limit::models::*;
+use uuid::Uuid;
+
+type RateLimitCache = Arc<RwLock<HashMap<(String, String), Vec<u64>>>>;
 
 #[derive(Clone)]
 #[allow(dead_code)]
 pub struct RateLimitService {
     pool: PgPool,
     // In-memory cache: key = (rule_id, identifier), value = Vec<timestamp>
-    cache: Arc<RwLock<HashMap<(String, String), Vec<u64>>>>,
+    cache: RateLimitCache,
     #[allow(dead_code)]
     test_mode: bool,
 }
@@ -26,11 +29,7 @@ impl RateLimitService {
 
     /// Check if request should be rate limited
     /// Returns Ok(()) if allowed, Err with retry_after if limited
-    pub async fn check_rate_limit(
-        &self,
-        rule_id: &str,
-        identifier: &str,
-    ) -> Result<(), u64> {
+    pub async fn check_rate_limit(&self, rule_id: &str, identifier: &str) -> Result<(), u64> {
         // Skip if test mode
         if self.test_mode {
             return Ok(());
@@ -77,21 +76,17 @@ impl RateLimitService {
 
     /// Get all rate limit rules
     pub async fn list_rules(&self) -> Result<Vec<RateLimitRule>, sqlx::Error> {
-        sqlx::query_as::<_, RateLimitRule>(
-            "SELECT * FROM rate_limit_rules ORDER BY name"
-        )
-        .fetch_all(&self.pool)
-        .await
+        sqlx::query_as::<_, RateLimitRule>("SELECT * FROM rate_limit_rules ORDER BY name")
+            .fetch_all(&self.pool)
+            .await
     }
 
     /// Get a single rate limit rule
     pub async fn get_rule(&self, rule_id: &str) -> Result<Option<RateLimitRule>, sqlx::Error> {
-        sqlx::query_as::<_, RateLimitRule>(
-            "SELECT * FROM rate_limit_rules WHERE id = $1"
-        )
-        .bind(rule_id)
-        .fetch_optional(&self.pool)
-        .await
+        sqlx::query_as::<_, RateLimitRule>("SELECT * FROM rate_limit_rules WHERE id = $1")
+            .bind(rule_id)
+            .fetch_optional(&self.pool)
+            .await
     }
 
     /// Update a rate limit rule
@@ -122,7 +117,7 @@ impl RateLimitService {
         if let Some(enabled) = update.enabled {
             query.push_str(&format!(", enabled = ${}", param_idx));
             params.push((if enabled { "TRUE" } else { "FALSE" }).to_string());
-             param_idx += 1;
+            param_idx += 1;
         }
 
         query.push_str(&format!(" WHERE id = ${}", param_idx));
@@ -139,9 +134,9 @@ impl RateLimitService {
 
     /// Verify bypass token
     pub async fn verify_bypass_token(&self, token: &str) -> Result<bool, sqlx::Error> {
-        let result: Option<(i64,)> = sqlx::query_as(
+        let result: Option<(i32,)> = sqlx::query_as(
             "SELECT 1 FROM rate_limit_bypass_tokens 
-             WHERE token = $1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)"
+             WHERE token = $1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)",
         )
         .bind(token)
         .fetch_optional(&self.pool)
@@ -153,7 +148,7 @@ impl RateLimitService {
     /// List all bypass tokens
     pub async fn list_bypass_tokens(&self) -> Result<Vec<BypassToken>, sqlx::Error> {
         sqlx::query_as::<_, BypassToken>(
-            "SELECT * FROM rate_limit_bypass_tokens ORDER BY created_at DESC"
+            "SELECT * FROM rate_limit_bypass_tokens ORDER BY created_at DESC",
         )
         .fetch_all(&self.pool)
         .await
@@ -163,19 +158,19 @@ impl RateLimitService {
     pub async fn create_bypass_token(
         &self,
         create: CreateBypassToken,
-        created_by: Option<String>,
+        created_by: Option<Uuid>,
     ) -> Result<BypassToken, sqlx::Error> {
         let token = format!("{:x}", uuid::Uuid::new_v4().as_u128());
-        
+
         let bypass_token = sqlx::query_as::<_, BypassToken>(
             "INSERT INTO rate_limit_bypass_tokens (token, description, expires_at, created_by)
-             VALUES ($1, $2, $3, $4)
-             RETURNING *"
+             VALUES ($1, $2, $3::TIMESTAMPTZ, $4)
+             RETURNING *",
         )
         .bind(&token)
         .bind(&create.description)
-        .bind(&create.expires_at)
-        .bind(&created_by)
+        .bind(create.expires_at)
+        .bind(created_by)
         .fetch_one(&self.pool)
         .await?;
 
@@ -183,9 +178,9 @@ impl RateLimitService {
     }
 
     /// Delete bypass token
-    pub async fn delete_bypass_token(&self, token_id: &str) -> Result<(), sqlx::Error> {
+    pub async fn delete_bypass_token(&self, id: Uuid) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM rate_limit_bypass_tokens WHERE id = $1")
-            .bind(token_id)
+            .bind(id)
             .execute(&self.pool)
             .await?;
         Ok(())

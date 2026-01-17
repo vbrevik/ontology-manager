@@ -187,7 +187,7 @@ function SystemStatus() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-emerald-500">Connected</div>
-                        <p className="text-xs text-muted-foreground mt-1">SQLite</p>
+                        <p className="text-xs text-muted-foreground mt-1">PostgreSQL</p>
                     </CardContent>
                 </Card>
 

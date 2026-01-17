@@ -1,16 +1,18 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct RateLimitRule {
-    pub id: String,
+    pub id: Uuid,
     pub name: String,
     pub endpoint_pattern: String,
     pub max_requests: i64,
     pub window_seconds: i64,
     pub strategy: RateLimitStrategy,
     pub enabled: bool,
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
@@ -26,12 +28,12 @@ pub enum RateLimitStrategy {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BypassToken {
-    pub id: String,
+    pub id: Uuid,
     pub token: String,
     pub description: Option<String>,
-    pub created_at: String,
-    pub expires_at: Option<String>,
-    pub created_by: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,5 +47,5 @@ pub struct UpdateRateLimitRule {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateBypassToken {
     pub description: Option<String>,
-    pub expires_at: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
 }

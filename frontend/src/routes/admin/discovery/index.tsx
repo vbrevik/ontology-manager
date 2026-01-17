@@ -19,6 +19,7 @@ interface ServiceInstance {
     status: 'UP' | 'DOWN' | 'WARNING';
     last_heartbeat: string;
     metadata: Record<string, string>;
+    entity_id?: string;
 }
 
 function ServiceDiscovery() {
@@ -153,7 +154,14 @@ function ServiceDiscovery() {
                                 </div>
                             )}
 
-                            <div className="pt-4 flex justify-end">
+                            <div className="pt-4 flex justify-between items-center">
+                                {service.entity_id ? (
+                                    <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-indigo-600" asChild>
+                                        <a href={`/admin/ontology/Explorer?entityId=${service.entity_id}`}>View in Ontology</a>
+                                    </Button>
+                                ) : (
+                                    <span />
+                                )}
                                 <Link
                                     to="/admin/discovery/$serviceId"
                                     params={{ serviceId: service.id as string }}

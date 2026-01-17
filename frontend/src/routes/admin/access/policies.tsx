@@ -22,6 +22,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { parsePolicy } from '@/features/rebac/lib/policyParser'
+import { testPolicy, type TestPolicyRequest, type EvaluationContext } from '@/features/ontology/lib/api'
 
 export const Route = createFileRoute('/admin/access/policies')({
     component: PoliciesPage,
@@ -113,20 +115,81 @@ function PoliciesPage() {
 
     const handleEvaluate = async () => {
         setIsEvaluating(true)
+        setSimulationResult(null)
 
-        // Simulate policy evaluation
-        await new Promise(resolve => setTimeout(resolve, 800))
+        try {
+            // 1. Parse Inputs (Subject, Resource)
+            let parsedSubject = {};
+            try {
+                parsedSubject = JSON.parse(subject);
+            } catch (e) {
+                throw new Error("Invalid Subject JSON");
+            }
 
-        // Mock evaluation result - in real implementation, this would call backend
-        const mockResult: SimulationResult = {
-            allowed: Math.random() > 0.5,
-            reason: 'Policy evaluation completed',
-            matchedRules: ['Rule 1: user.role == "editor"', 'Rule 2: action in ["read", "update"]'],
-            executionTime: Math.random() * 50
+            let parsedResource = {};
+            try {
+                parsedResource = JSON.parse(resource);
+            } catch (e) {
+                throw new Error("Invalid Resource JSON");
+            }
+
+            // 2. Parse Policy DSL
+            const parsedRules = parsePolicy(policy);
+            if (parsedRules.length === 0) {
+                throw new Error("No valid 'allow if' rules found in policy");
+            }
+            // implementation_plan.md noted limitation: currently taking first rule
+            const ruleToTest = parsedRules[0];
+
+            // 3. Construct Context
+            const context: EvaluationContext = {
+                user: parsedSubject,
+                entity: parsedResource,
+                request: { permission: action },
+                env: {
+                    time: new Date().toISOString()
+                }
+            };
+
+            // 4. Construct Request
+            const request: TestPolicyRequest = {
+                policy: {
+                    name: "Simulation",
+                    description: "Simulation",
+                    effect: ruleToTest.effect,
+                    target_permissions: [], // Not used for direct test
+                    conditions: ruleToTest.conditions,
+                    is_active: true
+                },
+                context: context,
+                permission: action
+            };
+
+            // 5. Call API
+            const result = await testPolicy(request);
+
+            setSimulationResult({
+                allowed: result.would_match,
+                reason: result.would_match
+                    ? `Matched policy rule (Effect: ${result.effect})`
+                    : "Conditions did not match",
+                matchedRules: result.condition_results
+                    .filter(c => c.passed)
+                    .map(c => `${c.attribute} ${c.operator} ${JSON.stringify(c.expected_value)}`),
+                executionTime: 10 // Backend doesn't return time yet, placeholder
+            });
+
+        } catch (e: any) {
+            console.error(e);
+            setSimulationResult({
+                allowed: false,
+                reason: `Error: ${e.message}`,
+                matchedRules: [],
+                executionTime: 0
+            });
+        } finally {
+            setIsEvaluating(false);
         }
-
-        setSimulationResult(mockResult)
-        setIsEvaluating(false)
     }
 
     const handleSave = () => {

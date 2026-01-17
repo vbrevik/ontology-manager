@@ -19,6 +19,7 @@ interface ServiceInstance {
     status: 'UP' | 'DOWN' | 'WARNING';
     last_heartbeat: string;
     metadata: Record<string, string>;
+    entity_id?: string;
 }
 
 function ServiceDetails() {
@@ -115,10 +116,17 @@ function ServiceDetails() {
                             {service.endpoint}
                         </p>
                     </div>
-                    <Button variant="outline" size="sm" onClick={fetchService} disabled={loading}>
-                        <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </Button>
+                    <div className="flex flex-col items-end gap-2">
+                        <Button variant="outline" size="sm" onClick={fetchService} disabled={loading}>
+                            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </Button>
+                        {service.entity_id && (
+                            <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-indigo-600" asChild>
+                                <a href={`/admin/ontology/Explorer?entityId=${service.entity_id}`}>View in Entity Explorer</a>
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 

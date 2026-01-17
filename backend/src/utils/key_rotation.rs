@@ -1,8 +1,8 @@
-use std::fs;
-use std::time::{SystemTime, UNIX_EPOCH};
-use rsa::{RsaPrivateKey, RsaPublicKey};
 use rsa::pkcs1::{EncodeRsaPrivateKey, LineEnding};
 use rsa::pkcs8::EncodePublicKey;
+use rsa::{RsaPrivateKey, RsaPublicKey};
+use std::fs;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn rotate_keys() -> Result<(), Box<dyn std::error::Error>> {
     // Generate a new 2048-bit RSA key pair
@@ -15,21 +15,24 @@ pub fn rotate_keys() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create keys directory if it doesn't exist
     fs::create_dir_all("keys")?;
-    
+
     // Save new keys with timestamp
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
         .as_secs();
-    
-    fs::write(format!("keys/private_key_{}.pem", timestamp), private_pem.to_string())?;
-    fs::write(format!("keys/public_key_{}.pem", timestamp), public_pem.to_string())?;
-    
+
+    fs::write(format!("keys/private_key_{}.pem", timestamp), &private_pem)?;
+    fs::write(format!("keys/public_key_{}.pem", timestamp), &public_pem)?;
+
     // Update current keys
-    fs::write("keys/private_key.pem", private_pem.to_string())?;
-    fs::write("keys/public_key.pem", public_pem.to_string())?;
-    
-    println!("Keys rotated successfully! New keys saved with timestamp: {}", timestamp);
+    fs::write("keys/private_key.pem", &private_pem)?;
+    fs::write("keys/public_key.pem", &public_pem)?;
+
+    println!(
+        "Keys rotated successfully! New keys saved with timestamp: {}",
+        timestamp
+    );
     Ok(())
 }
 
@@ -37,7 +40,7 @@ pub fn get_key_age() -> Result<u64, Box<dyn std::error::Error>> {
     let metadata = fs::metadata("keys/private_key.pem")?;
     let created_time = metadata.created()?;
     let now = SystemTime::now();
-    
+
     let duration = now.duration_since(created_time)?;
     Ok(duration.as_secs())
 }

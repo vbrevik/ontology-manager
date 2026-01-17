@@ -1,4 +1,0 @@
-
-// Logic being appended to the end of backend/src/features/rebac/routes.rs via append or replace?
-// I need to add the imports and the handler function to routes.rs.
-// Since I can't append easily with replace_file_content (it replaces ranges), I will use multi_replace to add imports at top and handler at bottom.

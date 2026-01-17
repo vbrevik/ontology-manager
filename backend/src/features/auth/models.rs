@@ -1,9 +1,9 @@
-use serde::{Serialize, Deserialize};
-use sqlx::FromRow;
-use validator::Validate;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use sqlx::FromRow;
+use uuid::Uuid;
+use validator::Validate;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct User {
@@ -88,7 +88,10 @@ pub struct RegisterUser {
 
 #[derive(Debug, Serialize, Deserialize, Validate, Clone)]
 pub struct LoginUser {
-    #[validate(length(min = 3, message = "Identifier (email or username) must be at least 3 characters"))]
+    #[validate(length(
+        min = 3,
+        message = "Identifier (email or username) must be at least 3 characters"
+    ))]
     pub identifier: String,
 
     #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
@@ -99,10 +102,13 @@ pub struct LoginUser {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AuthResponse {
-    pub access_token: String,
-    pub refresh_token: String,
-    pub expires_in: i64,
+    pub access_token: Option<String>,
+    pub refresh_token: Option<String>,
+    pub expires_in: Option<i64>,
     pub remember_me: bool,
+    pub mfa_required: bool,
+    pub mfa_token: Option<String>,
+    pub user_id: Uuid,
 }
 
 #[allow(dead_code)]

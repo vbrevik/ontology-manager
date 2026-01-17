@@ -1,5 +1,5 @@
-pub mod service;
 pub mod routes;
+pub mod service;
 
-pub use service::UserService;
 pub use routes::users_routes;
+pub use service::UserService;

@@ -14,6 +14,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DebugRouteImport } from './routes/debug'
 import { Route as ApiManagementRouteImport } from './routes/api-management'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -22,21 +23,27 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as StatsUsersRouteImport } from './routes/stats/users'
 import { Route as StatsSystemRouteImport } from './routes/stats/system'
 import { Route as StatsSessionsRouteImport } from './routes/stats/sessions'
+import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password/$token'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSessionsRouteImport } from './routes/admin/sessions'
 import { Route as AdminSchedulesRouteImport } from './routes/admin/schedules'
 import { Route as AdminRateLimitsRouteImport } from './routes/admin/rate-limits'
 import { Route as AdminOntologyRouteImport } from './routes/admin/ontology'
 import { Route as AdminNewRouteImport } from './routes/admin/new'
+import { Route as AdminNavigationRouteImport } from './routes/admin/navigation'
+import { Route as AdminFirefighterRouteImport } from './routes/admin/firefighter'
 import { Route as AdminDiscoveryRouteImport } from './routes/admin/discovery'
+import { Route as AdminAiRouteImport } from './routes/admin/ai'
 import { Route as AdminAccessRouteImport } from './routes/admin/access'
 import { Route as AdminAbacRouteImport } from './routes/admin/abac'
 import { Route as AdminOntologyIndexRouteImport } from './routes/admin/ontology/index'
 import { Route as AdminDiscoveryIndexRouteImport } from './routes/admin/discovery/index'
 import { Route as AdminRolesManagerRouteImport } from './routes/admin/roles/manager'
 import { Route as AdminRolesDesignerRouteImport } from './routes/admin/roles/designer'
+import { Route as AdminRolesDelegationRouteImport } from './routes/admin/roles/delegation'
 import { Route as AdminOntologyVersionsRouteImport } from './routes/admin/ontology/versions'
 import { Route as AdminOntologyDesignerRouteImport } from './routes/admin/ontology/designer'
+import { Route as AdminOntologyContextsRouteImport } from './routes/admin/ontology/contexts'
 import { Route as AdminOntologyRelationshipsRouteImport } from './routes/admin/ontology/Relationships'
 import { Route as AdminOntologyGraphRouteImport } from './routes/admin/ontology/Graph'
 import { Route as AdminOntologyClassesRouteImport } from './routes/admin/ontology/Classes'
@@ -71,6 +78,11 @@ const LogsRoute = LogsRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DebugRoute = DebugRouteImport.update({
@@ -113,6 +125,11 @@ const StatsSessionsRoute = StatsSessionsRouteImport.update({
   path: '/stats/sessions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
+  id: '/reset-password/$token',
+  path: '/reset-password/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -143,9 +160,24 @@ const AdminNewRoute = AdminNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNavigationRoute = AdminNavigationRouteImport.update({
+  id: '/navigation',
+  path: '/navigation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFirefighterRoute = AdminFirefighterRouteImport.update({
+  id: '/firefighter',
+  path: '/firefighter',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDiscoveryRoute = AdminDiscoveryRouteImport.update({
   id: '/discovery',
   path: '/discovery',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAiRoute = AdminAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAccessRoute = AdminAccessRouteImport.update({
@@ -178,6 +210,11 @@ const AdminRolesDesignerRoute = AdminRolesDesignerRouteImport.update({
   path: '/roles/designer',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRolesDelegationRoute = AdminRolesDelegationRouteImport.update({
+  id: '/roles/delegation',
+  path: '/roles/delegation',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOntologyVersionsRoute = AdminOntologyVersionsRouteImport.update({
   id: '/versions',
   path: '/versions',
@@ -186,6 +223,11 @@ const AdminOntologyVersionsRoute = AdminOntologyVersionsRouteImport.update({
 const AdminOntologyDesignerRoute = AdminOntologyDesignerRouteImport.update({
   id: '/designer',
   path: '/designer',
+  getParentRoute: () => AdminOntologyRoute,
+} as any)
+const AdminOntologyContextsRoute = AdminOntologyContextsRouteImport.update({
+  id: '/contexts',
+  path: '/contexts',
   getParentRoute: () => AdminOntologyRoute,
 } as any)
 const AdminOntologyRelationshipsRoute =
@@ -245,6 +287,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/api-management': typeof ApiManagementRoute
   '/debug': typeof DebugRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/profile': typeof ProfileRoute
@@ -252,13 +295,17 @@ export interface FileRoutesByFullPath {
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
   '/admin/access': typeof AdminAccessRouteWithChildren
+  '/admin/ai': typeof AdminAiRoute
   '/admin/discovery': typeof AdminDiscoveryRouteWithChildren
+  '/admin/firefighter': typeof AdminFirefighterRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/new': typeof AdminNewRoute
   '/admin/ontology': typeof AdminOntologyRouteWithChildren
   '/admin/rate-limits': typeof AdminRateLimitsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
@@ -273,8 +320,10 @@ export interface FileRoutesByFullPath {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
+  '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
@@ -284,6 +333,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/api-management': typeof ApiManagementRoute
   '/debug': typeof DebugRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/profile': typeof ProfileRoute
@@ -291,11 +341,15 @@ export interface FileRoutesByTo {
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
   '/admin/access': typeof AdminAccessRouteWithChildren
+  '/admin/ai': typeof AdminAiRoute
+  '/admin/firefighter': typeof AdminFirefighterRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/new': typeof AdminNewRoute
   '/admin/rate-limits': typeof AdminRateLimitsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
@@ -310,8 +364,10 @@ export interface FileRoutesByTo {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
+  '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
   '/admin/discovery': typeof AdminDiscoveryIndexRoute
@@ -323,6 +379,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/api-management': typeof ApiManagementRoute
   '/debug': typeof DebugRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/profile': typeof ProfileRoute
@@ -330,13 +387,17 @@ export interface FileRoutesById {
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
   '/admin/access': typeof AdminAccessRouteWithChildren
+  '/admin/ai': typeof AdminAiRoute
   '/admin/discovery': typeof AdminDiscoveryRouteWithChildren
+  '/admin/firefighter': typeof AdminFirefighterRoute
+  '/admin/navigation': typeof AdminNavigationRoute
   '/admin/new': typeof AdminNewRoute
   '/admin/ontology': typeof AdminOntologyRouteWithChildren
   '/admin/rate-limits': typeof AdminRateLimitsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
@@ -351,8 +412,10 @@ export interface FileRoutesById {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
+  '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
@@ -365,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/api-management'
     | '/debug'
+    | '/forgot-password'
     | '/login'
     | '/logs'
     | '/profile'
@@ -372,13 +436,17 @@ export interface FileRouteTypes {
     | '/reports'
     | '/admin/abac'
     | '/admin/access'
+    | '/admin/ai'
     | '/admin/discovery'
+    | '/admin/firefighter'
+    | '/admin/navigation'
     | '/admin/new'
     | '/admin/ontology'
     | '/admin/rate-limits'
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
@@ -393,8 +461,10 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
+    | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
     | '/admin/discovery/'
@@ -404,6 +474,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api-management'
     | '/debug'
+    | '/forgot-password'
     | '/login'
     | '/logs'
     | '/profile'
@@ -411,11 +482,15 @@ export interface FileRouteTypes {
     | '/reports'
     | '/admin/abac'
     | '/admin/access'
+    | '/admin/ai'
+    | '/admin/firefighter'
+    | '/admin/navigation'
     | '/admin/new'
     | '/admin/rate-limits'
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
@@ -430,8 +505,10 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
+    | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
     | '/admin/discovery'
@@ -442,6 +519,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/api-management'
     | '/debug'
+    | '/forgot-password'
     | '/login'
     | '/logs'
     | '/profile'
@@ -449,13 +527,17 @@ export interface FileRouteTypes {
     | '/reports'
     | '/admin/abac'
     | '/admin/access'
+    | '/admin/ai'
     | '/admin/discovery'
+    | '/admin/firefighter'
+    | '/admin/navigation'
     | '/admin/new'
     | '/admin/ontology'
     | '/admin/rate-limits'
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
@@ -470,8 +552,10 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
+    | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
     | '/admin/discovery/'
@@ -483,11 +567,13 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   ApiManagementRoute: typeof ApiManagementRoute
   DebugRoute: typeof DebugRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
+  ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   StatsSessionsRoute: typeof StatsSessionsRoute
   StatsSystemRoute: typeof StatsSystemRoute
   StatsUsersRoute: typeof StatsUsersRoute
@@ -528,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/debug': {
@@ -586,6 +679,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatsSessionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password/$token': {
+      id: '/reset-password/$token'
+      path: '/reset-password/$token'
+      fullPath: '/reset-password/$token'
+      preLoaderRoute: typeof ResetPasswordTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -628,11 +728,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminNewRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/navigation': {
+      id: '/admin/navigation'
+      path: '/navigation'
+      fullPath: '/admin/navigation'
+      preLoaderRoute: typeof AdminNavigationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/firefighter': {
+      id: '/admin/firefighter'
+      path: '/firefighter'
+      fullPath: '/admin/firefighter'
+      preLoaderRoute: typeof AdminFirefighterRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/discovery': {
       id: '/admin/discovery'
       path: '/discovery'
       fullPath: '/admin/discovery'
       preLoaderRoute: typeof AdminDiscoveryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ai': {
+      id: '/admin/ai'
+      path: '/ai'
+      fullPath: '/admin/ai'
+      preLoaderRoute: typeof AdminAiRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/access': {
@@ -677,6 +798,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRolesDesignerRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/roles/delegation': {
+      id: '/admin/roles/delegation'
+      path: '/roles/delegation'
+      fullPath: '/admin/roles/delegation'
+      preLoaderRoute: typeof AdminRolesDelegationRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ontology/versions': {
       id: '/admin/ontology/versions'
       path: '/versions'
@@ -689,6 +817,13 @@ declare module '@tanstack/react-router' {
       path: '/designer'
       fullPath: '/admin/ontology/designer'
       preLoaderRoute: typeof AdminOntologyDesignerRouteImport
+      parentRoute: typeof AdminOntologyRoute
+    }
+    '/admin/ontology/contexts': {
+      id: '/admin/ontology/contexts'
+      path: '/contexts'
+      fullPath: '/admin/ontology/contexts'
+      preLoaderRoute: typeof AdminOntologyContextsRouteImport
       parentRoute: typeof AdminOntologyRoute
     }
     '/admin/ontology/Relationships': {
@@ -804,6 +939,7 @@ interface AdminOntologyRouteChildren {
   AdminOntologyClassesRoute: typeof AdminOntologyClassesRoute
   AdminOntologyGraphRoute: typeof AdminOntologyGraphRoute
   AdminOntologyRelationshipsRoute: typeof AdminOntologyRelationshipsRoute
+  AdminOntologyContextsRoute: typeof AdminOntologyContextsRoute
   AdminOntologyDesignerRoute: typeof AdminOntologyDesignerRoute
   AdminOntologyVersionsRoute: typeof AdminOntologyVersionsRoute
   AdminOntologyIndexRoute: typeof AdminOntologyIndexRoute
@@ -813,6 +949,7 @@ const AdminOntologyRouteChildren: AdminOntologyRouteChildren = {
   AdminOntologyClassesRoute: AdminOntologyClassesRoute,
   AdminOntologyGraphRoute: AdminOntologyGraphRoute,
   AdminOntologyRelationshipsRoute: AdminOntologyRelationshipsRoute,
+  AdminOntologyContextsRoute: AdminOntologyContextsRoute,
   AdminOntologyDesignerRoute: AdminOntologyDesignerRoute,
   AdminOntologyVersionsRoute: AdminOntologyVersionsRoute,
   AdminOntologyIndexRoute: AdminOntologyIndexRoute,
@@ -825,7 +962,10 @@ const AdminOntologyRouteWithChildren = AdminOntologyRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAbacRoute: typeof AdminAbacRoute
   AdminAccessRoute: typeof AdminAccessRouteWithChildren
+  AdminAiRoute: typeof AdminAiRoute
   AdminDiscoveryRoute: typeof AdminDiscoveryRouteWithChildren
+  AdminFirefighterRoute: typeof AdminFirefighterRoute
+  AdminNavigationRoute: typeof AdminNavigationRoute
   AdminNewRoute: typeof AdminNewRoute
   AdminOntologyRoute: typeof AdminOntologyRouteWithChildren
   AdminRateLimitsRoute: typeof AdminRateLimitsRoute
@@ -833,6 +973,7 @@ interface AdminRouteChildren {
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminRolesDelegationRoute: typeof AdminRolesDelegationRoute
   AdminRolesDesignerRoute: typeof AdminRolesDesignerRoute
   AdminRolesManagerRoute: typeof AdminRolesManagerRoute
 }
@@ -840,7 +981,10 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAbacRoute: AdminAbacRoute,
   AdminAccessRoute: AdminAccessRouteWithChildren,
+  AdminAiRoute: AdminAiRoute,
   AdminDiscoveryRoute: AdminDiscoveryRouteWithChildren,
+  AdminFirefighterRoute: AdminFirefighterRoute,
+  AdminNavigationRoute: AdminNavigationRoute,
   AdminNewRoute: AdminNewRoute,
   AdminOntologyRoute: AdminOntologyRouteWithChildren,
   AdminRateLimitsRoute: AdminRateLimitsRoute,
@@ -848,6 +992,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSessionsRoute: AdminSessionsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminRolesDelegationRoute: AdminRolesDelegationRoute,
   AdminRolesDesignerRoute: AdminRolesDesignerRoute,
   AdminRolesManagerRoute: AdminRolesManagerRoute,
 }
@@ -859,11 +1004,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   ApiManagementRoute: ApiManagementRoute,
   DebugRoute: DebugRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
+  ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   StatsSessionsRoute: StatsSessionsRoute,
   StatsSystemRoute: StatsSystemRoute,
   StatsUsersRoute: StatsUsersRoute,

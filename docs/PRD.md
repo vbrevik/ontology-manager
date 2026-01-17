@@ -17,7 +17,7 @@ Create a scalable, modular application platform that can grow to contain multipl
 
 ## 4. Technical Stack
 - **Backend:** Rust with Axum framework
-- **Database:** SQLite (with potential for PostgreSQL migration)
+- **Database:** PostgreSQL
 - **Frontend:** React with Vite and TanStack Router
 - **Authentication:** JWT with refresh tokens
 - **Testing:** Playwright (E2E), Rust test framework (unit/integration)

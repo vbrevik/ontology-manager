@@ -27,6 +27,9 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { fetchEntities, type Entity } from '@/features/ontology/lib/api'
+import { Badge } from '@/components/ui/badge'
+import { UserCog } from 'lucide-react'
 
 function TabButton({ id, label, activeTab, onClick }: { id: string, label: string, activeTab: string, onClick: (id: string) => void }) {
     const active = activeTab === id
@@ -78,6 +81,7 @@ export default function UserManagement() {
     // Form state
     const [userPasswords, setUserPasswords] = useState<Record<string, { password: string, forceChange: boolean }>>({})
     const [userEdits, setUserEdits] = useState<Record<string, { username: string, email: string }>>({})
+    const [userEntities, setUserEntities] = useState<Record<string, Entity>>({})
 
     const fetchUsers = async () => {
         try {
@@ -169,11 +173,26 @@ export default function UserManagement() {
         }
     }
 
-    const toggleExpand = (userId: string) => {
-        setExpandedUserId(expandedUserId === userId ? null : userId)
+    const toggleExpand = async (userId: string) => {
+        const isOpening = expandedUserId !== userId
+        setExpandedUserId(isOpening ? userId : null)
+
         // Close edit accordion when toggling view
         if (editAccordionOpen[userId]) {
             setEditAccordionOpen(prev => ({ ...prev, [userId]: false }))
+        }
+
+        // Fetch user entity if opening and not already loaded
+        if (isOpening && !userEntities[userId]) {
+            try {
+                const entities = await fetchEntities({ class_id: undefined }) // We'll filter in JS to keep it simple
+                const userEntity = entities.find(e => e.class_name === 'User' && e.attributes.user_id === userId)
+                if (userEntity) {
+                    setUserEntities(prev => ({ ...prev, [userId]: userEntity }))
+                }
+            } catch (err) {
+                console.error("Failed to fetch user entity", err)
+            }
         }
     }
 
@@ -401,6 +420,7 @@ export default function UserManagement() {
                                                     <Tabs defaultValue="profile" className="w-full">
                                                         <div className="flex items-center gap-4 border-b mb-4">
                                                             <TabButton id="profile" label="Profile" activeTab={expandedTabs[user.id] || 'profile'} onClick={(id) => setExpandedTabs(prev => ({ ...prev, [user.id]: id }))} />
+                                                            <TabButton id="ontology" label="Ontology" activeTab={expandedTabs[user.id] || 'profile'} onClick={(id) => setExpandedTabs(prev => ({ ...prev, [user.id]: id }))} />
                                                             <TabButton id="roles" label="Roles & Access" activeTab={expandedTabs[user.id] || 'profile'} onClick={(id) => setExpandedTabs(prev => ({ ...prev, [user.id]: id }))} />
                                                             <TabButton id="activity" label="Activity" activeTab={expandedTabs[user.id] || 'profile'} onClick={(id) => setExpandedTabs(prev => ({ ...prev, [user.id]: id }))} />
                                                         </div>
@@ -443,6 +463,55 @@ export default function UserManagement() {
                                                         {(expandedTabs[user.id] === 'roles') && (
                                                             <div className="py-2">
                                                                 <UserRolesPanel userId={user.id} />
+                                                            </div>
+                                                        )}
+
+                                                        {(expandedTabs[user.id] === 'ontology') && (
+                                                            <div className="py-2 space-y-4">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <UserCog className="h-4 w-4 text-indigo-500" />
+                                                                        <h4 className="text-sm font-bold uppercase tracking-tight text-slate-700 dark:text-slate-300">Ontology Instance</h4>
+                                                                    </div>
+                                                                    {userEntities[user.id] && (
+                                                                        <Badge variant="outline" className="text-[10px] font-mono">
+                                                                            ID: {userEntities[user.id].id.split('-')[0]}...
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
+
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="p-3 rounded-lg border bg-background/50 space-y-2">
+                                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Extensible Attributes</span>
+                                                                        {userEntities[user.id] ? (
+                                                                            <div className="space-y-1">
+                                                                                {Object.entries(userEntities[user.id].attributes)
+                                                                                    .filter(([key]) => !['user_id', 'username', 'email'].includes(key))
+                                                                                    .map(([key, value]) => (
+                                                                                        <div key={key} className="flex justify-between text-xs py-1 border-b border-dashed">
+                                                                                            <span className="text-muted-foreground">{key}:</span>
+                                                                                            <span className="font-mono text-[11px] truncate">{JSON.stringify(value)}</span>
+                                                                                        </div>
+                                                                                    ))}
+                                                                                {Object.keys(userEntities[user.id].attributes).length <= 3 && (
+                                                                                    <p className="text-[10px] text-muted-foreground italic">No custom attributes set.</p>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : (
+                                                                            <p className="text-[10px] text-muted-foreground italic">No ontology instance found for this user.</p>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="p-3 rounded-lg border bg-indigo-50/30 dark:bg-indigo-950/10 space-y-2">
+                                                                        <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">System Context</span>
+                                                                        <p className="text-[11px] leading-relaxed">
+                                                                            This user is registered as a first-class entity in the system ontology.
+                                                                            Attributes here can be used for deep situational awareness and context-aware policies.
+                                                                        </p>
+                                                                        <Button variant="link" size="sm" className="h-auto p-0 text-[10px] text-indigo-600" asChild>
+                                                                            <a href="/admin/ontology/Explorer">Open in Entity Explorer</a>
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         )}
 

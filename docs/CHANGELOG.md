@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## 2026-01-17 — Technical MVP Polish Complete
+
+- Resolved all compiler warnings across the backend codebase.
+- Fixed 17+ `cargo clippy` violations (type complexity, redundant borrows, logic simplifications).
+- Enforced consistent code style with `cargo fmt`.
+- Verified all 42 backend integration tests pass.
+- Updated `BACKLOG.md` and `TASKS.md` to reflect current project state.
+- Project is now ready for internal developer review and Git push.
+
+## 2026-01-14 — PostgreSQL finalized
+
+- Standardized documentation on PostgreSQL-only deployment.
+- Aligned Playwright base URL with Vite proxy and removed hardcoded backend URLs.
+- Updated UI database label to PostgreSQL.
+
 ## 2026-01-01 — Authentication milestone completed
 
 - Completed backend JWT improvements: switched to RS256, RSA key generation and 90-day rotation, public key verification.
@@ -13,6 +28,4 @@ All notable changes to this project are documented in this file.
 - Added comprehensive security logging and monitoring hooks.
 
 Notes:
-- See `docs/BACKLOG.md`, `docs/IMPLEMENTATION_PLAN.md`, and `docs/security_task_manager.md` for details.
-
-
+- See `docs/BACKLOG.md` for feature status.

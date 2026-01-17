@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { User, Lock, Mail, AlertCircle, CheckCircle2, Shield, Smartphone, Laptop, Trash2 } from 'lucide-react'
 import { getPasswordStrength } from '@/lib/password'
+import { MfaSetup } from '@/features/auth/components/MfaSetup'
 
 export const Route = createFileRoute('/profile')({
   component: Profile,
@@ -264,6 +265,11 @@ function Profile() {
             </div>
           </CardContent>
         </Card>
+
+        {/* MFA Setup */}
+        <div className="md:col-span-2">
+          <MfaSetup />
+        </div>
       </div>
 
       {/* Change Password Card */}

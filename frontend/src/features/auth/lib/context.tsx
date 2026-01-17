@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { type AuthState, getUserInfo, login as loginApi, register as registerApi, logout as logoutApi, refreshSession } from './auth'
 import { useIdleTimer } from '@/hooks/useIdleTimer'
 import { SessionTimeoutWarning } from '@/components/SessionTimeoutWarning'
@@ -18,6 +19,7 @@ const IDLE_WARNING_TIMEOUT = 30 * 60 * 1000 // 30 minutes
 const IDLE_LOGOUT_TIMEOUT = 35 * 60 * 1000 // 35 minutes (5 min grace period)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+    const navigate = useNavigate()
     const [authState, setAuthState] = useState<AuthState>({
         user: null,
         isAuthenticated: false,
@@ -91,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Provide the auth state methods wrapped with state updates
     const login = async (identifier: string, password: string, rememberMe: boolean = false) => {
         const result = await loginApi(identifier, password, rememberMe)
-        if (result.success) {
+        if (result.success && !result.mfaRequired) {
             await checkAuth()
         }
         return result
@@ -112,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isAuthenticated: false,
             isLoading: false,
         })
+        navigate({ to: '/' })
     }
 
     const value = {

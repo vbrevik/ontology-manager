@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/form'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/features/auth/lib/context'
+import { MfaChallenge } from '@/features/auth/components/MfaChallenge'
 
 export const Route = createFileRoute('/login')({
   component: Login,
@@ -43,6 +44,9 @@ function Login() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showMfa, setShowMfa] = useState(false)
+  const [mfaUserId, setMfaUserId] = useState<string | null>(null)
+  const [mfaRememberMe, setMfaRememberMe] = useState(false)
   const { login } = useAuth()
 
   const form = useForm<LoginFormValues>({
@@ -61,6 +65,14 @@ function Login() {
     try {
       const result = await login(values.identifier, values.password, values.rememberMe)
 
+      if (result.success && result.mfaRequired && result.userId) {
+        setMfaUserId(result.userId)
+        setMfaRememberMe(values.rememberMe)
+        setShowMfa(true)
+        setIsLoading(false)
+        return
+      }
+
       if (!result.success) {
         setError(result.error || 'Login failed. Please check your credentials.')
         setIsLoading(false)
@@ -74,6 +86,19 @@ function Login() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (showMfa && mfaUserId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
+        <MfaChallenge
+          userId={mfaUserId}
+          rememberMe={mfaRememberMe}
+          onSuccess={() => navigate({ to: '/' })}
+          onCancel={() => setShowMfa(false)}
+        />
+      </div>
+    )
   }
 
   return (
@@ -121,7 +146,15 @@ function Login() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Password</FormLabel>
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm font-medium text-primary hover:underline text-muted-foreground"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                     <FormControl>
                       <Input
                         type="password"

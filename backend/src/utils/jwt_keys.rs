@@ -1,9 +1,9 @@
-use std::fs;
-use std::path::Path;
-use rsa::{RsaPrivateKey, RsaPublicKey};
+use crate::config::Config;
 use rsa::pkcs1::{EncodeRsaPrivateKey, LineEnding};
 use rsa::pkcs8::EncodePublicKey;
-use crate::config::Config;
+use rsa::{RsaPrivateKey, RsaPublicKey};
+use std::fs;
+use std::path::Path;
 
 pub fn generate_and_save_keys() -> Result<(), Box<dyn std::error::Error>> {
     // Generate a 2048-bit RSA key pair
@@ -16,12 +16,12 @@ pub fn generate_and_save_keys() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create keys directory if it doesn't exist
     fs::create_dir_all("keys")?;
-    
+
     // Save private key
-    fs::write("keys/private_key.pem", private_pem.to_string())?;
+    fs::write("keys/private_key.pem", &private_pem)?;
     // Save public key
-    fs::write("keys/public_key.pem", public_pem.to_string())?;
-    
+    fs::write("keys/public_key.pem", &public_pem)?;
+
     println!("RSA keys generated and saved successfully!");
     Ok(())
 }
@@ -31,7 +31,7 @@ pub fn load_keys(_config: &Config) -> Result<(String, String), Box<dyn std::erro
     let private_key = fs::read_to_string("keys/private_key.pem")?;
     // Load public key from file
     let public_key = fs::read_to_string("keys/public_key.pem")?;
-    
+
     Ok((private_key, public_key))
 }
 

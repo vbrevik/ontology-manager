@@ -1,13 +1,19 @@
-pub mod models;
-pub mod service;
-pub mod routes;
-pub mod policy_models;
-pub mod policy_service;
-pub mod policy_routes;
 pub mod condition_evaluator;
 pub mod impact;
+pub mod models;
+pub mod policy_models;
+pub mod policy_routes;
+pub mod policy_service;
+pub mod routes;
+pub mod service;
 
-pub use models::*;
-pub use service::RebacService;
-pub use policy_models::*;
+// Refactored modules
+pub mod delegation;
+pub mod permissions;
+pub mod policy_bridge;
+pub mod relationships;
+pub mod roles;
+pub mod temporal;
+
 pub use policy_service::PolicyService;
+pub use service::{RebacError, RebacService};

@@ -1,9 +1,9 @@
-use sqlx::{Pool, Postgres};
-use uuid::Uuid;
+use super::condition_evaluator::{evaluate_policy_conditions, test_policy_conditions};
+use super::policy_models::*;
 use chrono::Utc;
 use serde_json::Value as JsonValue;
-use super::policy_models::*;
-use super::condition_evaluator::{evaluate_policy_conditions, test_policy_conditions};
+use sqlx::{Pool, Postgres};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub enum PolicyError {
@@ -45,16 +45,14 @@ impl PolicyService {
     pub async fn list_policies(&self, active_only: bool) -> Result<Vec<Policy>, PolicyError> {
         let policies = if active_only {
             sqlx::query_as::<_, Policy>(
-                "SELECT * FROM policies WHERE is_active = TRUE ORDER BY priority DESC, name"
+                "SELECT * FROM policies WHERE is_active = TRUE ORDER BY priority DESC, name",
             )
             .fetch_all(&self.pool)
             .await?
         } else {
-            sqlx::query_as::<_, Policy>(
-                "SELECT * FROM policies ORDER BY priority DESC, name"
-            )
-            .fetch_all(&self.pool)
-            .await?
+            sqlx::query_as::<_, Policy>("SELECT * FROM policies ORDER BY priority DESC, name")
+                .fetch_all(&self.pool)
+                .await?
         };
         Ok(policies)
     }
@@ -67,10 +65,16 @@ impl PolicyService {
             .ok_or_else(|| PolicyError::NotFound("Policy not found".to_string()))
     }
 
-    pub async fn create_policy(&self, input: CreatePolicyInput, created_by: Option<Uuid>) -> Result<Policy, PolicyError> {
+    pub async fn create_policy(
+        &self,
+        input: CreatePolicyInput,
+        created_by: Option<Uuid>,
+    ) -> Result<Policy, PolicyError> {
         // Validate effect
         if !["ALLOW", "DENY"].contains(&input.effect.to_uppercase().as_str()) {
-            return Err(PolicyError::InvalidInput("Effect must be ALLOW or DENY".to_string()));
+            return Err(PolicyError::InvalidInput(
+                "Effect must be ALLOW or DENY".to_string(),
+            ));
         }
 
         let policy = sqlx::query_as::<_, Policy>(
@@ -80,7 +84,7 @@ impl PolicyService {
                  conditions, scope_entity_id, is_active, valid_from, valid_until, created_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
-            "#
+            "#,
         )
         .bind(&input.name)
         .bind(&input.description)
@@ -100,7 +104,12 @@ impl PolicyService {
         Ok(policy)
     }
 
-    pub async fn update_policy(&self, id: Uuid, input: UpdatePolicyInput, updated_by: Option<Uuid>) -> Result<Policy, PolicyError> {
+    pub async fn update_policy(
+        &self,
+        id: Uuid,
+        input: UpdatePolicyInput,
+        updated_by: Option<Uuid>,
+    ) -> Result<Policy, PolicyError> {
         let existing = self.get_policy(id).await?;
 
         let policy = sqlx::query_as::<_, Policy>(
@@ -121,7 +130,7 @@ impl PolicyService {
                 updated_by = $13
             WHERE id = $1
             RETURNING *
-            "#
+            "#,
         )
         .bind(id)
         .bind(&input.name)
@@ -166,7 +175,7 @@ impl PolicyService {
         entity_class_id: Option<Uuid>,
     ) -> Result<Vec<Policy>, PolicyError> {
         let now = Utc::now();
-        
+
         // Get policies that:
         // 1. Are active
         // 2. Match the permission (or have empty permissions = all)
@@ -188,7 +197,7 @@ impl PolicyService {
               )
             ORDER BY p.priority DESC, 
                      CASE WHEN p.effect = 'DENY' THEN 0 ELSE 1 END
-            "#
+            "#,
         )
         .bind(now)
         .bind(permission)
@@ -210,8 +219,12 @@ impl PolicyService {
             // Check if conditions match
             if evaluate_policy_conditions(&policy.conditions, context) {
                 return match policy.effect.as_str() {
-                    "DENY" => PolicyResult::Denied { policy_name: policy.name.clone() },
-                    "ALLOW" => PolicyResult::Allowed { policy_name: policy.name.clone() },
+                    "DENY" => PolicyResult::Denied {
+                        policy_name: policy.name.clone(),
+                    },
+                    "ALLOW" => PolicyResult::Allowed {
+                        policy_name: policy.name.clone(),
+                    },
                     _ => continue,
                 };
             }
@@ -220,10 +233,7 @@ impl PolicyService {
     }
 
     /// Test a policy against a context without persisting
-    pub fn test_policy(
-        &self,
-        input: &TestPolicyRequest,
-    ) -> TestPolicyResponse {
+    pub fn test_policy(&self, input: &TestPolicyRequest) -> TestPolicyResponse {
         let would_match = evaluate_policy_conditions(&input.policy.conditions, &input.context);
         let condition_results = test_policy_conditions(&input.policy.conditions, &input.context);
 
@@ -238,6 +248,7 @@ impl PolicyService {
     // LOGGING
     // ========================================================================
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_evaluation(
         &self,
         user_id: Uuid,
@@ -248,11 +259,14 @@ impl PolicyService {
         final_result: bool,
         context: &EvaluationContext,
     ) -> Result<(), PolicyError> {
-        let (policy_result_str, policy_id, policy_name): (&str, Option<Uuid>, Option<String>) = match policy_result {
-            PolicyResult::Allowed { policy_name } => ("ALLOWED", None, Some(policy_name.clone())),
-            PolicyResult::Denied { policy_name } => ("DENIED", None, Some(policy_name.clone())),
-            PolicyResult::NoMatch => ("NO_MATCH", None, None),
-        };
+        let (policy_result_str, policy_id, policy_name): (&str, Option<Uuid>, Option<String>) =
+            match policy_result {
+                PolicyResult::Allowed { policy_name } => {
+                    ("ALLOWED", None, Some(policy_name.clone()))
+                }
+                PolicyResult::Denied { policy_name } => ("DENIED", None, Some(policy_name.clone())),
+                PolicyResult::NoMatch => ("NO_MATCH", None, None),
+            };
 
         sqlx::query(
             r#"
@@ -260,7 +274,7 @@ impl PolicyService {
                 (user_id, entity_id, permission, rebac_result, policy_result, 
                  final_result, decisive_policy_id, decisive_policy_name, context_snapshot)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            "#
+            "#,
         )
         .bind(user_id)
         .bind(entity_id)

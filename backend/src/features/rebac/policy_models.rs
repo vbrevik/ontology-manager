@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
+use sqlx::FromRow;
 use std::collections::HashMap;
+use uuid::Uuid;
 
 // ============================================================================
 // POLICY MODEL
@@ -121,7 +121,7 @@ impl EvaluationContext {
         if parts.len() != 2 {
             return None;
         }
-        
+
         match parts[0] {
             "entity" => self.entity.get(parts[1]),
             "user" => self.user.get(parts[1]),
@@ -166,7 +166,7 @@ impl PolicyResult {
     pub fn is_allowed(&self) -> bool {
         matches!(self, PolicyResult::Allowed { .. } | PolicyResult::NoMatch)
     }
-    
+
     pub fn is_denied(&self) -> bool {
         matches!(self, PolicyResult::Denied { .. })
     }

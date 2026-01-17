@@ -4,9 +4,9 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use tower_cookies::{Cookies, Cookie};
 use rand::{distributions::Alphanumeric, Rng};
-use tower_cookies::cookie::time::Duration; // Correct Duration type for tower-cookies
+use tower_cookies::cookie::time::Duration;
+use tower_cookies::{Cookie, Cookies}; // Correct Duration type for tower-cookies
 
 pub const CSRF_COOKIE_NAME: &str = "csrf_token";
 pub const CSRF_HEADER_NAME: &str = "X-CSRF-Token";
@@ -25,7 +25,7 @@ pub fn set_csrf_cookie(cookies: &Cookies) {
     cookie.set_path("/");
     cookie.set_same_site(tower_cookies::cookie::SameSite::Lax); // Match auth cookies
     cookie.set_secure(false); // Set to true in production with HTTPS
-    // Set expiry effectively "session" or match auth token
+                              // Set expiry effectively "session" or match auth token
     cookie.set_max_age(Duration::seconds(3600)); // 1 hour
 
     cookies.add(cookie);
@@ -45,9 +45,7 @@ pub async fn validate_csrf(
     }
 
     // Retrieve CSRF cookie
-    let cookie_token = cookies
-        .get(CSRF_COOKIE_NAME)
-        .map(|c| c.value().to_string());
+    let cookie_token = cookies.get(CSRF_COOKIE_NAME).map(|c| c.value().to_string());
 
     // Retrieve CSRF header
     let header_token = req
@@ -66,7 +64,7 @@ pub async fn validate_csrf(
             // Missing or mismatch
             tracing::warn!(
                 "CSRF validation failed: Method={}, Uri={}, CookieTokenPresent={}, HeaderTokenPresent={}", 
-                method, 
+                method,
                 req.uri(),
                 cookie_token.is_some(),
                 header_token.is_some()

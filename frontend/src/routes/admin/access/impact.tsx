@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, ShieldAlert, Plus } from "lucide-react";
-import { simulateRoleChange, fetchRoles, type Role, type ImpactReport } from "@/features/ontology/lib/api";
+import { simulateRoleChange, fetchRoles, fetchPermissionTypes, type Role, type ImpactReport, type PermissionType } from "@/features/ontology/lib/api";
 
 export const Route = createFileRoute('/admin/access/impact')({
     component: ImpactAnalysisPage,
@@ -23,6 +23,8 @@ function ImpactAnalysisPage() {
 
     // Simulation inputs
     const [permissionsToRemove, setPermissionsToRemove] = useState<string[]>([]);
+    const [permissionsToAdd, setPermissionsToAdd] = useState<string[]>([]);
+    const [allPermissions, setAllPermissions] = useState<PermissionType[]>([]);
 
     const [simulationResult, setSimulationResult] = useState<ImpactReport | null>(null);
     const [loading, setLoading] = useState(false);
@@ -30,6 +32,7 @@ function ImpactAnalysisPage() {
 
     useEffect(() => {
         loadRoles();
+        loadAllPermissions();
     }, []);
 
     useEffect(() => {
@@ -37,8 +40,18 @@ function ImpactAnalysisPage() {
             loadPermissions(selectedRole);
             setSimulationResult(null);
             setPermissionsToRemove([]);
+            setPermissionsToAdd([]);
         }
     }, [selectedRole]);
+
+    async function loadAllPermissions() {
+        try {
+            const perms = await fetchPermissionTypes();
+            setAllPermissions(perms);
+        } catch (e) {
+            console.error("Failed to load permissions", e);
+        }
+    }
 
     async function loadRoles() {
         try {
@@ -79,7 +92,7 @@ function ImpactAnalysisPage() {
             const report = await simulateRoleChange({
                 role_id: selectedRole,
                 removed_permissions: permissionsToRemove,
-                added_permissions: []
+                added_permissions: permissionsToAdd
             });
             setSimulationResult(report);
         } catch (e) {
@@ -123,33 +136,64 @@ function ImpactAnalysisPage() {
                             </div>
 
                             {selectedRole && (
-                                <div className="space-y-3 pt-4 animate-in fade-in">
-                                    <div className="flex items-center justify-between">
-                                        <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Simulate Revoking
-                                        </Label>
-                                        <span className="text-xs text-muted-foreground">{permissionsToRemove.length} selected</span>
+                                <div className="space-y-6 pt-4 animate-in fade-in">
+                                    {/* Revoke Section */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                Simulate Revoking
+                                            </Label>
+                                            <span className="text-xs text-muted-foreground">{permissionsToRemove.length} selected</span>
+                                        </div>
+                                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 border rounded-md p-2 bg-background/40">
+                                            {currentPermissions.length === 0 ? (
+                                                <p className="text-xs text-muted-foreground italic p-2">No permissions assigned to this role.</p>
+                                            ) : (
+                                                currentPermissions.map(perm => (
+                                                    <div key={perm} className="flex items-center space-x-2 p-1 rounded hover:bg-muted/50 cursor-pointer" onClick={() => togglePermissionToRemove(perm)}>
+                                                        <Checkbox checked={permissionsToRemove.includes(perm)} onCheckedChange={() => togglePermissionToRemove(perm)} />
+                                                        <span className={`text-sm ${permissionsToRemove.includes(perm) ? 'text-destructive line-through opacity-70' : ''}`}>
+                                                            {perm}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 border rounded-md p-2 bg-background/40">
-                                        {currentPermissions.length === 0 ? (
-                                            <p className="text-xs text-muted-foreground italic p-2">No permissions assigned to this role.</p>
-                                        ) : (
-                                            currentPermissions.map(perm => (
-                                                <div key={perm} className="flex items-center space-x-2 p-1 rounded hover:bg-muted/50 cursor-pointer" onClick={() => togglePermissionToRemove(perm)}>
-                                                    <Checkbox checked={permissionsToRemove.includes(perm)} onCheckedChange={() => togglePermissionToRemove(perm)} />
-                                                    <span className={`text-sm ${permissionsToRemove.includes(perm) ? 'text-destructive line-through opacity-70' : ''}`}>
-                                                        {perm}
-                                                    </span>
-                                                </div>
-                                            ))
-                                        )}
+
+                                    {/* Grant Section */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                                Simulate Granting
+                                            </Label>
+                                            <span className="text-xs text-muted-foreground">{permissionsToAdd.length} selected</span>
+                                        </div>
+                                        <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 border rounded-md p-2 bg-background/40">
+                                            {allPermissions.filter(p => !currentPermissions.includes(p.name)).length === 0 ? (
+                                                <p className="text-xs text-muted-foreground italic p-2">No available permissions to add.</p>
+                                            ) : (
+                                                allPermissions
+                                                    .filter(p => !currentPermissions.includes(p.name))
+                                                    .map(perm => (
+                                                        <div key={perm.id} className="flex items-center space-x-2 p-1 rounded hover:bg-muted/50 cursor-pointer" onClick={() => {
+                                                            setPermissionsToAdd(prev => prev.includes(perm.name) ? prev.filter(p => p !== perm.name) : [...prev, perm.name])
+                                                        }}>
+                                                            <Checkbox checked={permissionsToAdd.includes(perm.name)} onCheckedChange={() => { }} />
+                                                            <span className={`text-sm ${permissionsToAdd.includes(perm.name) ? 'text-green-600 font-medium' : ''}`}>
+                                                                {perm.name}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             <Button
                                 className="w-full bg-blue-600 hover:bg-blue-700"
-                                disabled={!selectedRole || permissionsToRemove.length === 0 || loading}
+                                disabled={!selectedRole || (permissionsToRemove.length === 0 && permissionsToAdd.length === 0) || loading}
                                 onClick={handleSimulate}
                             >
                                 {loading ? "Simulating..." : "Run Simulation"}

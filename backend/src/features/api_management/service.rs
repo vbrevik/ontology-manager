@@ -1,8 +1,6 @@
-use sqlx::PgPool;
-use uuid::Uuid;
-use chrono::Utc;
 use rand::Rng;
-use std::sync::Arc;
+use sqlx::{PgPool, Row};
+use uuid::Uuid;
 
 use super::models::{ApiKey, CreateApiKeyResponse, WebhookEndpoint};
 
@@ -17,65 +15,64 @@ impl ApiManagementService {
     }
 
     pub async fn list_keys(&self) -> Result<Vec<ApiKey>, String> {
-        let keys = sqlx::query_as::<_, ApiKey>(
-            "SELECT * FROM api_keys ORDER BY created_at DESC"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        let keys = sqlx::query_as::<_, ApiKey>("SELECT * FROM api_keys ORDER BY created_at DESC")
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
 
         Ok(keys)
     }
 
-    pub async fn create_key(&self, name: String, scopes: Vec<String>) -> Result<CreateApiKeyResponse, String> {
+    pub async fn create_key(
+        &self,
+        name: String,
+        scopes: Vec<String>,
+    ) -> Result<CreateApiKeyResponse, String> {
         let prefix = format!("pk_live_{}", self.generate_random_string(8));
         let secret_part = self.generate_random_string(32);
         let secret = format!("{}{}", prefix, secret_part);
         let hash = format!("hashed_{}", secret_part); // Placeholder hashing
 
-        let record = sqlx::query!(
+        let record = sqlx::query(
             r#"
             INSERT INTO api_keys (name, prefix, hash, scopes, status)
             VALUES ($1, $2, $3, $4, 'active')
             RETURNING id, created_at
             "#,
-            name,
-            prefix,
-            hash,
-            &scopes
         )
+        .bind(&name)
+        .bind(&prefix)
+        .bind(&hash)
+        .bind(&scopes)
         .fetch_one(&self.pool)
         .await
         .map_err(|e| e.to_string())?;
 
         Ok(CreateApiKeyResponse {
-            id: record.id,
+            id: record.get("id"),
             name,
             prefix,
-            secret, // Return full secret only now
+            secret,
             scopes,
-            created_at: record.created_at,
+            created_at: record.get("created_at"),
         })
     }
 
     pub async fn revoke_key(&self, id: Uuid) -> Result<(), String> {
-        sqlx::query(
-            "UPDATE api_keys SET status = 'revoked' WHERE id = $1"
-        )
-        .bind(id)
-        .execute(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        sqlx::query("UPDATE api_keys SET status = 'revoked' WHERE id = $1")
+            .bind(id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| e.to_string())?;
         Ok(())
     }
 
     pub async fn list_webhooks(&self) -> Result<Vec<WebhookEndpoint>, String> {
-        let webhooks = sqlx::query_as::<_, WebhookEndpoint>(
-            "SELECT * FROM webhooks ORDER BY created_at DESC"
-        )
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| e.to_string())?;
+        let webhooks =
+            sqlx::query_as::<_, WebhookEndpoint>("SELECT * FROM webhooks ORDER BY created_at DESC")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| e.to_string())?;
 
         Ok(webhooks)
     }

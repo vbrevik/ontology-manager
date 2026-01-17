@@ -1,13 +1,13 @@
-use serde_json::Value as JsonValue;
 use super::policy_models::*;
+use serde_json::Value as JsonValue;
 
 /// Evaluate a single condition against the context
 pub fn evaluate_condition(condition: &Condition, context: &EvaluationContext) -> bool {
     let actual_value = context.get(&condition.attribute);
-    
+
     match condition.operator.as_str() {
-        "==" => compare_eq(actual_value, &condition.value),
-        "!=" => !compare_eq(actual_value, &condition.value),
+        "==" | "eq" | "equals" => compare_eq(actual_value, &condition.value),
+        "!=" | "neq" | "not_equals" => !compare_eq(actual_value, &condition.value),
         ">" => compare_gt(actual_value, &condition.value),
         ">=" => compare_gte(actual_value, &condition.value),
         "<" => compare_lt(actual_value, &condition.value),
@@ -28,13 +28,13 @@ pub fn evaluate_condition_group(group: &ConditionGroup, context: &EvaluationCont
     if group.all.is_empty() && group.any.is_empty() {
         return true;
     }
-    
+
     // All conditions must pass (AND)
     let all_pass = group.all.is_empty() || group.all.iter().all(|c| evaluate_condition(c, context));
-    
+
     // Any condition must pass (OR), or empty means pass
     let any_pass = group.any.is_empty() || group.any.iter().any(|c| evaluate_condition(c, context));
-    
+
     all_pass && any_pass
 }
 
@@ -51,18 +51,21 @@ pub fn evaluate_policy_conditions(conditions: &JsonValue, context: &EvaluationCo
 }
 
 /// Test a policy's conditions and return detailed results
-pub fn test_policy_conditions(conditions: &JsonValue, context: &EvaluationContext) -> Vec<ConditionTestResult> {
+pub fn test_policy_conditions(
+    conditions: &JsonValue,
+    context: &EvaluationContext,
+) -> Vec<ConditionTestResult> {
     let mut results = Vec::new();
-    
+
     let group: ConditionGroup = match serde_json::from_value(conditions.clone()) {
         Ok(g) => g,
         Err(_) => return results,
     };
-    
+
     for condition in group.all.iter().chain(group.any.iter()) {
         let actual = context.get(&condition.attribute).cloned();
         let passed = evaluate_condition(condition, context);
-        
+
         results.push(ConditionTestResult {
             attribute: condition.attribute.clone(),
             operator: condition.operator.clone(),
@@ -71,7 +74,7 @@ pub fn test_policy_conditions(conditions: &JsonValue, context: &EvaluationContex
             passed,
         });
     }
-    
+
     results
 }
 
@@ -80,7 +83,7 @@ pub fn test_policy_conditions(conditions: &JsonValue, context: &EvaluationContex
 // ============================================================================
 
 fn compare_eq(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
-    actual.map_or(false, |a| a == expected)
+    actual == Some(expected)
 }
 
 fn compare_gt(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
@@ -116,8 +119,8 @@ fn check_in(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
         JsonValue::Array(arr) => arr,
         _ => return false,
     };
-    
-    actual.map_or(false, |a| arr.contains(a))
+
+    actual.is_some_and(|a| arr.contains(a))
 }
 
 fn check_contains(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
@@ -136,11 +139,9 @@ fn check_contains(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
 
 fn check_regex(actual: Option<&JsonValue>, expected: &JsonValue) -> bool {
     match (actual, expected) {
-        (Some(JsonValue::String(s)), JsonValue::String(pattern)) => {
-            regex::Regex::new(pattern)
-                .map(|re| re.is_match(s))
-                .unwrap_or(false)
-        }
+        (Some(JsonValue::String(s)), JsonValue::String(pattern)) => regex::Regex::new(pattern)
+            .map(|re| re.is_match(s))
+            .unwrap_or(false),
         _ => false,
     }
 }
@@ -152,43 +153,40 @@ mod tests {
 
     #[test]
     fn test_equality() {
-        let ctx = EvaluationContext::new()
-            .with_entity("status", json!("Active"));
-        
+        let ctx = EvaluationContext::new().with_entity("status", json!("Active"));
+
         let cond = Condition {
             attribute: "entity.status".to_string(),
             operator: "==".to_string(),
             value: json!("Active"),
         };
-        
+
         assert!(evaluate_condition(&cond, &ctx));
     }
 
     #[test]
     fn test_in_operator() {
-        let ctx = EvaluationContext::new()
-            .with_entity("PoliticalTension", json!("High"));
-        
+        let ctx = EvaluationContext::new().with_entity("PoliticalTension", json!("High"));
+
         let cond = Condition {
             attribute: "entity.PoliticalTension".to_string(),
             operator: "in".to_string(),
             value: json!(["High", "Critical"]),
         };
-        
+
         assert!(evaluate_condition(&cond, &ctx));
     }
 
     #[test]
     fn test_numeric_comparison() {
-        let ctx = EvaluationContext::new()
-            .with_user("clearance_level", json!(2));
-        
+        let ctx = EvaluationContext::new().with_user("clearance_level", json!(2));
+
         let cond = Condition {
             attribute: "user.clearance_level".to_string(),
             operator: "<".to_string(),
             value: json!(3),
         };
-        
+
         assert!(evaluate_condition(&cond, &ctx));
     }
 }

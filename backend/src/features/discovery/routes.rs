@@ -1,7 +1,9 @@
-use axum::{Router, routing::post, routing::get, Json, extract::State};
-use crate::features::discovery::service::DiscoveryService;
-use crate::features::discovery::models::{RegisterServiceRequest, HeartbeatRequest, ServiceInstance};
 use crate::features::auth::service::AuthError;
+use crate::features::discovery::models::{
+    HeartbeatRequest, RegisterServiceRequest, ServiceInstance,
+};
+use crate::features::discovery::service::DiscoveryService;
+use axum::{extract::State, routing::get, routing::post, Json, Router};
 
 pub fn discovery_routes() -> Router<DiscoveryService> {
     Router::new()
@@ -15,7 +17,9 @@ async fn get_service_handler(
     State(service): State<DiscoveryService>,
     axum::extract::Path(id): axum::extract::Path<String>,
 ) -> Result<Json<ServiceInstance>, AuthError> {
-    service.get_service(&id).await
+    service
+        .get_service(&id)
+        .await
         .map(Json)
         .ok_or(AuthError::UserNotFound) // Reusing UserNotFound for simplicity or define DiscoveryError
 }
@@ -35,7 +39,9 @@ async fn heartbeat_handler(
     if service.heartbeat(&req.service_id).await {
         Ok(Json(serde_json::json!({ "success": true })))
     } else {
-        Err(AuthError::ValidationError("Service ID not found".to_string()))
+        Err(AuthError::ValidationError(
+            "Service ID not found".to_string(),
+        ))
     }
 }
 

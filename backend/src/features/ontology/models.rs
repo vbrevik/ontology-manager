@@ -1,7 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 // ============================================================================
 // SCHEMA VERSIONING
@@ -183,6 +183,7 @@ pub struct EntityWithDetails {
     pub display_name: String,
     pub parent_entity_id: Option<Uuid>,
     pub parent_entity_name: Option<String>,
+    pub tenant_id: Option<Uuid>,
     pub attributes: serde_json::Value,
     pub approval_status: ApprovalStatus,
     pub created_at: DateTime<Utc>,
@@ -230,6 +231,7 @@ pub struct Relationship {
     pub target_entity_id: Uuid,
     pub relationship_type_id: Uuid,
     pub metadata: Option<serde_json::Value>,
+    pub tenant_id: Option<Uuid>,
     pub created_by: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
@@ -245,6 +247,7 @@ pub struct RelationshipWithDetails {
     pub relationship_type_id: Uuid,
     pub relationship_type_name: String,
     pub metadata: Option<serde_json::Value>,
+    pub tenant_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -252,7 +255,7 @@ pub struct RelationshipWithDetails {
 pub struct CreateRelationshipInput {
     pub source_entity_id: Uuid,
     pub target_entity_id: Uuid,
-    pub relationship_type: String,  // Name of the relationship type
+    pub relationship_type: String, // Name of the relationship type
     pub metadata: Option<serde_json::Value>,
 }
 

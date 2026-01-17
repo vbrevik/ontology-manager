@@ -1,10 +1,10 @@
-use jsonwebtoken::{encode, decode, Header, Validation, EncodingKey, DecodingKey, Algorithm};
-use serde::{Serialize, Deserialize};
-use chrono::{Utc, Duration};
 use crate::config::Config;
+use chrono::{Duration, Utc};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct UserRoleClaim {
     pub role_name: String,
     pub resource_id: Option<String>,
@@ -40,11 +40,18 @@ fn load_public_pem(config: &Config) -> Result<String, Box<dyn std::error::Error 
 
 use rand::Rng;
 
-pub fn create_jwt(user_id: &str, username: &str, email: &str, roles: Vec<UserRoleClaim>, permissions: Vec<String>, config: &Config) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+pub fn create_jwt(
+    user_id: &str,
+    username: &str,
+    email: &str,
+    roles: Vec<UserRoleClaim>,
+    permissions: Vec<String>,
+    config: &Config,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     let now = Utc::now();
     let iat = now.timestamp();
     let exp = (now + Duration::seconds(config.jwt_expiry)).timestamp();
- 
+
     let claims = Claims {
         sub: user_id.to_string(),
         username: username.to_string(),
@@ -55,24 +62,32 @@ pub fn create_jwt(user_id: &str, username: &str, email: &str, roles: Vec<UserRol
         exp,
         iat,
     };
- 
+
     let private_pem = load_private_pem(config)?;
     let encoding_key = if let Ok(k) = EncodingKey::from_rsa_pem(private_pem.as_ref()) {
         k
     } else {
-        let pem_block = pem::parse(private_pem.as_str()).map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
-        EncodingKey::from_rsa_der(&pem_block.contents())
+        let pem_block = pem::parse(private_pem.as_str())
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
+        EncodingKey::from_rsa_der(pem_block.contents())
     };
- 
+
     encode(&Header::new(Algorithm::RS256), &claims, &encoding_key)
         .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)
 }
- 
-pub fn create_refresh_token(user_id: &str, username: &str, email: &str, roles: Vec<UserRoleClaim>, permissions: Vec<String>, config: &Config) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
+
+pub fn create_refresh_token(
+    user_id: &str,
+    username: &str,
+    email: &str,
+    roles: Vec<UserRoleClaim>,
+    permissions: Vec<String>,
+    config: &Config,
+) -> Result<(String, String), Box<dyn std::error::Error + Send + Sync>> {
     let now = Utc::now();
     let iat = now.timestamp();
     let exp = (now + Duration::seconds(config.refresh_token_expiry)).timestamp();
- 
+
     let jti = format!("{:x}", rand::thread_rng().gen::<u128>());
     let claims = Claims {
         sub: user_id.to_string(),
@@ -89,8 +104,9 @@ pub fn create_refresh_token(user_id: &str, username: &str, email: &str, roles: V
     let encoding_key = if let Ok(k) = EncodingKey::from_rsa_pem(private_pem.as_ref()) {
         k
     } else {
-        let pem_block = pem::parse(private_pem.as_str()).map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
-        EncodingKey::from_rsa_der(&pem_block.contents())
+        let pem_block = pem::parse(private_pem.as_str())
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
+        EncodingKey::from_rsa_der(pem_block.contents())
     };
 
     let token = encode(&Header::new(Algorithm::RS256), &claims, &encoding_key)
@@ -98,13 +114,17 @@ pub fn create_refresh_token(user_id: &str, username: &str, email: &str, roles: V
     Ok((token, jti))
 }
 
-pub fn validate_jwt(token: &str, config: &Config) -> Result<Claims, Box<dyn std::error::Error + Send + Sync>> {
+pub fn validate_jwt(
+    token: &str,
+    config: &Config,
+) -> Result<Claims, Box<dyn std::error::Error + Send + Sync>> {
     let public_pem = load_public_pem(config)?;
     let decoding_key = if let Ok(k) = DecodingKey::from_rsa_pem(public_pem.as_ref()) {
         k
     } else {
-        let pem_block = pem::parse(public_pem.as_str()).map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
-        DecodingKey::from_rsa_der(&pem_block.contents())
+        let pem_block = pem::parse(public_pem.as_str())
+            .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { Box::new(e) })?;
+        DecodingKey::from_rsa_der(pem_block.contents())
     };
 
     decode::<Claims>(token, &decoding_key, &Validation::new(Algorithm::RS256))

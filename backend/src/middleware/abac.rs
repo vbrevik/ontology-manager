@@ -1,17 +1,17 @@
+use crate::features::abac::AbacService;
+use crate::features::auth::jwt::Claims;
 use axum::{
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
-use crate::features::abac::AbacService;
-use crate::features::auth::jwt::Claims;
 use uuid::Uuid;
 
 /// Extractor that requires a specific permission for access
-/// 
+///
 /// Usage:
-/// ```rust
+/// ```rust,ignore
 /// async fn delete_project(
 ///     RequirePermission(user, _): RequirePermission,
 ///     Path(project_id): Path<String>,
@@ -41,10 +41,13 @@ impl IntoResponse for PermissionError {
             }),
             PermissionError::InternalError(msg) => {
                 tracing::error!("ABAC internal error: {}", msg);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Authorization check failed")
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Authorization check failed",
+                )
             }
         };
-        
+
         (status, Json(serde_json::json!({ "error": message }))).into_response()
     }
 }
@@ -58,14 +61,26 @@ pub async fn check_user_permission(
     tenant_id: Option<Uuid>,
     field_name: Option<&str>,
 ) -> Result<bool, PermissionError> {
+    let user_uuid = Uuid::parse_str(user_id)
+        .map_err(|e| PermissionError::InternalError(format!("Invalid user ID: {}", e)))?;
+
+    let resource_uuid =
+        if let Some(rid) = resource_id {
+            Some(Uuid::parse_str(rid).map_err(|e| {
+                PermissionError::InternalError(format!("Invalid resource ID: {}", e))
+            })?)
+        } else {
+            None
+        };
+
     abac_service
-        .check_permission(user_id, action, resource_id, tenant_id, field_name)
+        .check_permission(user_uuid, action, resource_uuid, tenant_id, field_name)
         .await
         .map_err(|e| PermissionError::InternalError(e.to_string()))
 }
 
 /// Middleware function to require a specific permission
-/// 
+///
 /// Use with axum's `from_fn_with_state` for route-level permission checks
 pub async fn require_permission<B>(
     State(abac_service): State<AbacService>,
@@ -76,7 +91,7 @@ pub async fn require_permission<B>(
     field_name: Option<String>,
 ) -> Result<(), PermissionError> {
     let claims = claims.ok_or(PermissionError::Unauthorized)?;
-    
+
     let has_permission = check_user_permission(
         &abac_service,
         &claims.sub,
@@ -86,7 +101,7 @@ pub async fn require_permission<B>(
         field_name.as_deref(),
     )
     .await?;
-    
+
     if has_permission {
         Ok(())
     } else {

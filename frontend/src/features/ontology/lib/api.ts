@@ -109,19 +109,9 @@ export interface CreateVersionInput {
 }
 
 export async function fetchPermissionTypes(): Promise<PermissionType[]> {
-    try {
-        const res = await fetch('/api/rebac/permission-types');
-        if (!res.ok) throw new Error('Failed to fetch permission types');
-        return await res.json();
-    } catch (e) {
-        console.warn('Backend permission-types API not available, using mock data.');
-        return [
-            { id: 'pt1', name: 'READ_SENSITIVE', description: 'Can read sensitive data', level: 80, created_at: new Date().toISOString() },
-            { id: 'pt2', name: 'EDIT_CONTENT', description: 'Can edit content', level: 50, created_at: new Date().toISOString() },
-            { id: 'pt3', name: 'VIEW_PUBLIC', description: 'Can view public data', level: 10, created_at: new Date().toISOString() },
-            { id: 'pt4', name: 'DELETE_RECORDS', description: 'Can delete records', level: 90, created_at: new Date().toISOString() }
-        ];
-    }
+    const res = await fetch('/api/rebac/permission-types');
+    if (!res.ok) throw new Error('Failed to fetch permission types');
+    return await res.json();
 }
 
 export async function fetchRelationshipTypes(): Promise<RelationshipType[]> {
@@ -201,38 +191,15 @@ export interface RolePermissionMapping {
 }
 
 export async function fetchRoles(): Promise<Role[]> {
-    try {
-        const res = await fetch('/api/abac/roles'); // Reusing existing role endpoint
-        if (!res.ok) throw new Error(`Failed to fetch roles: ${res.status} ${res.statusText}`);
-        return await res.json();
-    } catch (e) {
-        console.error('Fetch Roles Error:', e);
-        console.warn('Backend roles API not available, using mock data.');
-        return [
-            { id: 'r1', name: 'Admin', description: 'System Administrator', created_at: new Date().toISOString() },
-            { id: 'r2', name: 'Editor', description: 'Content Editor', created_at: new Date().toISOString() },
-            { id: 'r3', name: 'Viewer', description: 'ReadOnly User', created_at: new Date().toISOString() }
-        ];
-    }
+    const res = await fetch('/api/abac/roles'); // Reusing existing role endpoint
+    if (!res.ok) throw new Error(`Failed to fetch roles: ${res.status} ${res.statusText}`);
+    return await res.json();
 }
 
 export async function fetchRolePermissionMappings(roleId: string): Promise<RolePermissionMapping[]> {
-    try {
-        const res = await fetch(`/api/rebac/roles/${roleId}/permission-mappings`);
-        if (!res.ok) throw new Error(`Failed to fetch role permission mappings: ${res.status} ${res.statusText}`);
-        return await res.json();
-    } catch (e) {
-        console.error('Fetch Role Mappings Error:', e);
-        console.warn('Backend role-permission-mappings API not available, using mock data.');
-        // Return some random mappings for demo
-        if (roleId === 'r1') { // Admin
-            return [
-                { id: 'm1', role_id: roleId, permission_type_id: 'pt1', created_at: new Date().toISOString() },
-                { id: 'm2', role_id: roleId, permission_type_id: 'pt4', created_at: new Date().toISOString() }
-            ];
-        }
-        return [];
-    }
+    const res = await fetch(`/api/rebac/roles/${roleId}/permission-mappings`);
+    if (!res.ok) throw new Error(`Failed to fetch role permission mappings: ${res.status} ${res.statusText}`);
+    return await res.json();
 }
 
 export async function addRolePermission(roleId: string, permissionName: string, fieldName?: string): Promise<void> {
@@ -255,7 +222,12 @@ export async function removeRolePermission(roleId: string, permissionName: strin
 // Ontology Classes API
 export async function fetchClasses(): Promise<Class[]> {
     const res = await fetch('/api/ontology/classes');
-    if (!res.ok) throw new Error('Failed to fetch classes');
+    return res.json();
+}
+
+export async function getClass(id: string): Promise<Class> {
+    const res = await fetch(`/api/ontology/classes/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch class');
     return res.json();
 }
 
@@ -352,6 +324,7 @@ export interface Entity {
     display_name: string;
     parent_entity_id?: string;
     parent_entity_name?: string;
+    tenant_id?: string;
     attributes: Record<string, any>;
     approval_status: ApprovalStatus;
     approved_by?: string;
@@ -430,20 +403,22 @@ export async function fetchEntities(query?: FetchEntitiesQuery): Promise<Entity[
     if (query?.is_root !== undefined) params.append('is_root', String(query.is_root));
 
     const res = await fetch(`/api/ontology/entities?${params.toString()}`);
-    if (!res.ok) throw new Error('Failed to fetch entities');
     return res.json();
 }
 
-export interface EntityNode {
-    id: string;
-    class_id: string;
-    display_name: string;
-    parent_entity_id?: string;
-    path_to_root: string;
+export async function getEntity(id: string): Promise<Entity> {
+    const res = await fetch(`/api/ontology/entities/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch entity');
+    return res.json();
+}
+
+export interface EntityDescendant {
+    descendant_id: string;
+    descendant_name: string;
     depth: number;
 }
 
-export async function fetchEntityDescendants(id: string): Promise<EntityNode[]> {
+export async function fetchEntityDescendants(id: string): Promise<EntityDescendant[]> {
     const res = await fetch(`/api/ontology/entities/${id}/descendants`);
     if (!res.ok) throw new Error('Failed to fetch entity descendants');
     return res.json();
@@ -529,16 +504,163 @@ export async function deleteRelationship(id: string): Promise<void> {
     if (!res.ok) throw new Error('Failed to delete relationship');
 }
 export async function fetchAccessMatrix(userIds: string[]): Promise<Record<string, string[]>> {
-    try {
-        const res = await fetch('/api/rebac/matrix', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_ids: userIds })
-        });
-        if (!res.ok) throw new Error('Failed to fetch matrix');
-        return await res.json();
-    } catch (e) {
-        console.warn('Backend matrix API not available, using mock data.');
-        return userIds.reduce((acc, id) => ({ ...acc, [id]: [] }), {});
-    }
+    const res = await fetch('/api/rebac/matrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_ids: userIds })
+    });
+    if (!res.ok) throw new Error('Failed to fetch matrix');
+    return await res.json();
+}
+// AI Suggestions
+export async function suggestOntology(context: string): Promise<any[]> {
+    const res = await fetch('/api/ai/suggest-ontology', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context })
+    });
+    if (!res.ok) throw new Error('Failed to suggest ontology');
+    return res.json();
+}
+
+export async function suggestRoles(context: string): Promise<any[]> {
+    const res = await fetch('/api/ai/suggest-roles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context })
+    });
+    if (!res.ok) throw new Error('Failed to suggest roles');
+    return res.json();
+}
+
+export async function suggestContexts(context: string): Promise<any[]> {
+    const res = await fetch('/api/ai/suggest-contexts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context })
+    });
+    if (!res.ok) throw new Error('Failed to suggest contexts');
+    return res.json();
+}
+
+export async function fetchAiStatus(): Promise<{ status: string; model?: string; provider_url?: string; message?: string }> {
+    const res = await fetch('/api/ai/status');
+    if (!res.ok) throw new Error('Failed to fetch AI status');
+    return res.json();
+}
+
+export async function fetchAiModels(): Promise<string[]> {
+    const res = await fetch('/api/ai/models');
+    if (!res.ok) throw new Error('Failed to fetch AI models');
+    return res.json();
+}
+// Delegation Rules
+export interface DelegationRule {
+    id: string;
+    granter_role_id: string;
+    grantee_role_id: string;
+    can_grant: boolean;
+    can_modify: boolean;
+    can_revoke: boolean;
+    tenant_id?: string;
+    created_at: string;
+}
+
+export interface CreateDelegationRuleInput {
+    granter_role_id: string;
+    grantee_role_id: string;
+    can_grant: boolean;
+    can_modify: boolean;
+    can_revoke: boolean;
+    tenant_id?: string;
+}
+
+export async function fetchDelegationRules(): Promise<DelegationRule[]> {
+    const res = await fetch('/api/rebac/delegation-rules', { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch delegation rules');
+    return res.json();
+}
+
+export async function createDelegationRule(input: CreateDelegationRuleInput): Promise<DelegationRule> {
+    const res = await fetch('/api/rebac/delegation-rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+        credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Failed to create delegation rule');
+    return res.json();
+}
+
+export async function removeDelegationRule(id: string): Promise<void> {
+    const res = await fetch(`/api/rebac/delegation-rules/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Failed to remove delegation rule');
+}
+
+// Policy Engine Types
+export interface Condition {
+    attribute: string;
+    operator: string;
+    value: any;
+}
+
+export interface ConditionGroup {
+    all: Condition[];
+    any: Condition[];
+}
+
+export interface EvaluationContext {
+    entity: Record<string, any>;
+    user: Record<string, any>;
+    env: Record<string, any>;
+    request: Record<string, any>;
+}
+
+export interface CreatePolicyInput {
+    name: string;
+    description?: string;
+    effect: string;
+    priority?: number;
+    target_class_id?: string;
+    target_permissions: string[];
+    conditions: ConditionGroup;
+    scope_entity_id?: string;
+    is_active?: boolean;
+    valid_from?: string;
+    valid_until?: string;
+}
+
+export interface TestPolicyRequest {
+    policy: CreatePolicyInput;
+    context: EvaluationContext;
+    permission: string;
+}
+
+export interface ConditionTestResult {
+    attribute: string;
+    operator: string;
+    expected_value: any;
+    actual_value?: any;
+    passed: boolean;
+}
+
+export interface TestPolicyResponse {
+    would_match: boolean;
+    effect: string;
+    condition_results: ConditionTestResult[];
+}
+
+export async function testPolicy(request: TestPolicyRequest): Promise<TestPolicyResponse> {
+    const res = await fetch('/api/rebac/policies/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(request)
+    });
+    if (!res.ok) throw new Error('Failed to test policy');
+    return res.json();
 }

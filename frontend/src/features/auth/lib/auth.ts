@@ -20,9 +20,12 @@ export interface AuthState {
 }
 
 export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  mfa_required?: boolean;
+  mfa_token?: string;
+  user_id: string; // added
 }
 
 export interface Session {
@@ -73,7 +76,7 @@ export async function getUserInfo(): Promise<AuthUser | null> {
 }
 
 // Login function
-export async function login(identifier: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string }> {
+export async function login(identifier: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string }> {
   try {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
@@ -84,6 +87,12 @@ export async function login(identifier: string, password: string, rememberMe: bo
       // Include credentials to send cookies
       credentials: 'include',
     });
+
+    if (response.status === 202) {
+      // MFA Required
+      const data: AuthResponse = await response.json();
+      return { success: true, mfaRequired: true, userId: data.user_id };
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -326,3 +335,75 @@ export async function revokeAdminSession(id: string): Promise<{ success: boolean
   }
 }
 
+
+// Request password reset
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      // Even on error (like 404), we might want to be vague, but the backend currently returns 200 for user not found
+      // If it's a real error (500), show it.
+      const errorText = await response.text();
+      return { success: false, error: `Request failed: ${errorText}` };
+    }
+
+    // Parse response message if needed, or just return success
+    // const json = await response.json();
+    return { success: true };
+
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Network error' };
+  }
+}
+
+// Verify reset token
+export async function verifyResetToken(token: string): Promise<{ success: boolean; valid: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/auth/verify-reset-token/${token}`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { success: false, valid: false, error: errorText };
+    }
+
+    const json = await response.json();
+    return { success: true, valid: json.valid };
+
+  } catch (error: any) {
+    return { success: false, valid: false, error: error.message || 'Network error' };
+  }
+}
+
+// Reset password
+export async function resetPassword(token: string, newPassword: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token, new_password: newPassword }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return { success: false, error: errorText };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Network error' };
+  }
+}

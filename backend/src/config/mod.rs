@@ -1,6 +1,6 @@
-use std::env;
 use dotenv::dotenv;
 use serde::Deserialize;
+use std::env;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -19,12 +19,13 @@ impl Config {
             .add_source(config::Environment::with_prefix("APP"));
 
         if let Ok(env) = env::var("RUN_MODE") {
-            builder = builder.add_source(config::File::with_name(&format!("config/{}", env)).required(false));
+            builder = builder
+                .add_source(config::File::with_name(&format!("config/{}", env)).required(false));
         }
 
         let config = builder.build()?;
 
-        Ok(config.try_deserialize()?)
+        config.try_deserialize()
     }
 }
 

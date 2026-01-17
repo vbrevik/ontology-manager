@@ -1,0 +1,90 @@
+   Compiling template-repo-backend v0.1.1 (/Users/vidarbrevik/projects/ontology-manager/backend)
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+   --> src/features/dashboard/service.rs:91:30
+    |
+ 91 |           let access_history = sqlx::query!(
+    |  ______________________________^
+ 92 | |             r#"
+ 93 | |             SELECT 
+ 94 | |                 DATE(created_at) as "day!",
+...   |
+101 | |             "#
+102 | |         ).fetch_all(&self.pool).await.map_err(|e| e.to_string())?;
+    | |_________^
+    |
+    = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+  --> src/features/ai/service.rs:40:22
+   |
+40 |           let result = sqlx::query!(
+   |  ______________________^
+41 | |             r#"
+42 | |             SELECT attributes 
+43 | |             FROM entities e
+...  |
+49 | |             "#
+50 | |         )
+   | |_________^
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error: set `DATABASE_URL` to use query macros online, or run `cargo sqlx prepare` to update the query cache
+  --> src/features/api_management/service.rs:36:22
+   |
+36 |           let record = sqlx::query!(
+   |  ______________________^
+37 | |             r#"
+38 | |             INSERT INTO api_keys (name, prefix, hash, scopes, status)
+39 | |             VALUES ($1, $2, $3, $4, 'active')
+...  |
+45 | |             &scopes
+46 | |         )
+   | |_________^
+   |
+   = note: this error originates in the macro `$crate::sqlx_macros::expand_query` which comes from the expansion of the macro `sqlx::query` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused import: `uuid::Uuid`
+ --> src/features/system/service.rs:5:5
+  |
+5 | use uuid::Uuid;
+  |     ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused imports: `Path` and `post`
+ --> src/features/system/routes.rs:2:20
+  |
+2 |     routing::{get, post},
+  |                    ^^^^
+3 |     Json, Router, extract::{State, Path},
+  |                                    ^^^^
+
+warning: unused import: `chrono::Utc`
+ --> src/features/api_management/service.rs:3:5
+  |
+3 | use chrono::Utc;
+  |     ^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+ --> src/features/api_management/service.rs:5:5
+  |
+5 | use std::sync::Arc;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `post`
+ --> src/features/api_management/routes.rs:2:20
+  |
+2 |     routing::{get, post, delete},
+  |                    ^^^^
+
+warning: unused variable: `client`
+  --> src/features/ai/service.rs:75:13
+   |
+75 |         let client = self.get_client(api_base.clone());
+   |             ^^^^^^ help: if this is intentional, prefix it with an underscore: `_client`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `template-repo-backend` (lib) generated 6 warnings
+error: could not compile `template-repo-backend` (lib) due to 3 previous errors; 6 warnings emitted

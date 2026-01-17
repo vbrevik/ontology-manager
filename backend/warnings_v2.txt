@@ -1,0 +1,75 @@
+    Updating crates.io index
+     Locking 12 packages to latest compatible versions
+      Adding foldhash v0.1.5
+      Adding hashbrown v0.15.5
+    Updating hashlink v0.8.4 -> v0.10.0
+    Updating heck v0.4.1 -> v0.5.0
+    Updating libsqlite3-sys v0.27.0 -> v0.30.1
+    Updating sqlx v0.7.4 -> v0.8.6
+    Updating sqlx-core v0.7.4 -> v0.8.6
+    Updating sqlx-macros v0.7.4 -> v0.8.6
+    Updating sqlx-macros-core v0.7.4 -> v0.8.6
+    Updating sqlx-mysql v0.7.4 -> v0.8.6
+    Updating sqlx-postgres v0.7.4 -> v0.8.6
+    Updating sqlx-sqlite v0.7.4 -> v0.8.6
+    Checking smallvec v1.15.1
+   Compiling thiserror v2.0.17
+   Compiling foldhash v0.1.5
+   Compiling form_urlencoded v1.2.2
+   Compiling concurrent-queue v2.5.0
+   Compiling parking v2.2.1
+   Compiling syn v1.0.109
+   Compiling base64 v0.22.1
+   Compiling bitflags v2.10.0
+    Checking hashbrown v0.14.5
+   Compiling icu_normalizer v2.1.1
+    Checking parking_lot_core v0.9.12
+   Compiling hashbrown v0.15.5
+   Compiling event-listener v5.4.1
+   Compiling heck v0.5.0
+    Checking parking_lot v0.12.5
+    Checking num-bigint-dig v0.8.6
+    Checking tracing-subscriber v0.3.22
+    Checking dashmap v5.5.3
+   Compiling idna_adapter v1.2.1
+    Checking tokio v1.48.0
+    Checking idna v1.1.0
+   Compiling futures-intrusive v0.5.0
+   Compiling hashlink v0.10.0
+    Checking governor v0.6.3
+    Checking url v2.5.7
+    Checking moka v0.12.12
+    Checking rsa v0.9.9
+    Checking tower-cookies v0.10.0
+    Checking simple_asn1 v0.6.3
+    Checking jsonwebtoken v9.3.1
+   Compiling sqlx-core v0.8.6
+   Compiling proc-macro-error v1.0.4
+   Compiling validator_types v0.16.0
+   Compiling validator_derive v0.16.0
+   Compiling sqlx-postgres v0.8.6
+    Checking tokio-util v0.7.17
+    Checking hyper v1.8.1
+    Checking tower v0.5.3
+    Checking tokio-rustls v0.26.4
+    Checking tokio-native-tls v0.3.1
+    Checking backoff v0.4.0
+    Checking validator v0.16.1
+    Checking tokio-stream v0.1.17
+    Checking h2 v0.3.27
+    Checking tower-http v0.6.8
+    Checking hyper-util v0.1.19
+    Checking hyper-rustls v0.27.7
+    Checking axum v0.7.9
+    Checking reqwest v0.12.28
+    Checking reqwest-eventsource v0.6.0
+    Checking async-openai v0.23.4
+   Compiling sqlx-macros-core v0.8.6
+    Checking hyper v0.14.32
+   Compiling sqlx-macros v0.8.6
+    Checking sqlx v0.8.6
+    Checking tower_governor v0.4.3
+    Checking hyper-tls v0.5.0
+    Checking reqwest v0.11.27
+    Checking template-repo-backend v0.1.1 (/Users/vidarbrevik/projects/ontology-manager/backend)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 16.87s

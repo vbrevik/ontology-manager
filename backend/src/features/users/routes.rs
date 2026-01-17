@@ -1,12 +1,12 @@
-use axum::{
-    extract::{Path, State, Json},
-    routing::{get, post, put, delete},
-    Router, Extension,
-};
 use crate::features::auth::jwt::Claims;
-use crate::features::users::service::UserService;
 use crate::features::auth::models::User;
 use crate::features::auth::service::AuthError;
+use crate::features::users::service::UserService;
+use axum::{
+    extract::{Json, Path, State},
+    routing::{delete, get, post, put},
+    Extension, Router,
+};
 use serde::Deserialize;
 
 pub fn users_routes() -> Router<UserService> {
@@ -31,9 +31,7 @@ pub struct UpdateUserRequest {
     pub email: Option<String>,
 }
 
-async fn list_users(
-    State(service): State<UserService>,
-) -> Result<Json<Vec<User>>, AuthError> {
+async fn list_users(State(service): State<UserService>) -> Result<Json<Vec<User>>, AuthError> {
     let users = service.find_all().await?;
     Ok(Json(users))
 }
@@ -52,7 +50,9 @@ async fn create_user(
     Json(req): Json<CreateUserRequest>,
 ) -> Result<Json<User>, AuthError> {
     let performing_user_id = uuid::Uuid::parse_str(&claims.sub).ok();
-    let user = service.create(&req.username, &req.email, &req.password, performing_user_id).await?;
+    let user = service
+        .create(&req.username, &req.email, &req.password, performing_user_id)
+        .await?;
     Ok(Json(user))
 }
 
@@ -63,7 +63,9 @@ async fn update_user(
     Json(req): Json<UpdateUserRequest>,
 ) -> Result<Json<User>, AuthError> {
     let performing_user_id = uuid::Uuid::parse_str(&claims.sub).ok();
-    let user = service.update(&id, req.username, req.email, performing_user_id).await?;
+    let user = service
+        .update(&id, req.username, req.email, performing_user_id)
+        .await?;
     Ok(Json(user))
 }
 

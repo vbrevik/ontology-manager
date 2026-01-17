@@ -11,6 +11,9 @@ services:
       - RUST_LOG=info
       - APP_DATABASE_URL=postgres://app:app_password@db:5432/app_db?sslmode=disable
       - DATABASE_URL=postgres://app:app_password@db:5432/app_db?sslmode=disable
+      - AI_SERVICE_URL=http://llm:11434/v1
+      - AI_MODEL=llama3
+      - AI_PREFER_ENV=true
     depends_on:
       - db
     networks:

@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ServiceStatus {
@@ -17,6 +17,7 @@ pub struct ServiceInstance {
     pub status: ServiceStatus,
     pub last_heartbeat: DateTime<Utc>,
     pub metadata: std::collections::HashMap<String, String>,
+    pub entity_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

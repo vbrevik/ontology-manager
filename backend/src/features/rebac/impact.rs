@@ -1,7 +1,6 @@
-
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use sqlx::{Pool, Postgres, Row};
+use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ImpactReport {
@@ -36,7 +35,10 @@ impl ImpactService {
     }
 
     /// Simulate adding/removing permissions from a role
-    pub async fn simulate_role_change(&self, input: SimulateRoleChangeInput) -> Result<ImpactReport, sqlx::Error> {
+    pub async fn simulate_role_change(
+        &self,
+        input: SimulateRoleChangeInput,
+    ) -> Result<ImpactReport, sqlx::Error> {
         let mut report = ImpactReport {
             affected_users_count: 0,
             gained_access: vec![],
@@ -53,7 +55,7 @@ impl ImpactService {
             LEFT JOIN user_roles ur ON u.id = ur.user_id
             LEFT JOIN scoped_user_roles sur ON u.id = sur.user_id
             WHERE (ur.role_id = $1) OR (sur.role_id = $1 AND sur.revoked_at IS NULL)
-            "#
+            "#,
         )
         .bind(input.role_id)
         .fetch_all(&self.pool)
@@ -62,13 +64,12 @@ impl ImpactService {
         // 2. For each user, check the impact
         // Optimization: For "Added" permissions, everyone with the role gains them (unless they already had them)
         // For "Removed" permissions, they lose them unless they have them from another role.
-        
-        
+
         for user_row in users {
             let user_row_id: Uuid = user_row.get("id");
             let user_email: String = user_row.get("email");
             let user_username: String = user_row.get("username");
-            
+
             // Check LOST access
             for perm in &input.removed_permissions {
                 // Check if user has this permission from ANY OTHER role
@@ -96,7 +97,6 @@ impl ImpactService {
                 .fetch_one(&self.pool)
                 .await?;
 
-
                 if !has_alternative {
                     report.lost_access.push(UserImpact {
                         user_id: user_row_id,
@@ -106,7 +106,7 @@ impl ImpactService {
                     });
                 }
             }
-            
+
             // Check GAINED access
             for perm in &input.added_permissions {
                 let had_it_before: bool = sqlx::query_scalar(
@@ -131,7 +131,6 @@ impl ImpactService {
                 .fetch_one(&self.pool)
                 .await?;
 
-
                 if !had_it_before {
                     report.gained_access.push(UserImpact {
                         user_id: user_row_id,
@@ -144,7 +143,7 @@ impl ImpactService {
         }
 
         report.affected_users_count = report.gained_access.len() + report.lost_access.len();
-        
+
         Ok(report)
     }
 }

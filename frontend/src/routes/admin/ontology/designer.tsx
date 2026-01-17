@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Database, Sparkles, History, Loader2, Plus, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import * as ontologyApi from '@/features/ontology/lib/api'
+import { useAi } from "@/features/ai/lib/context";
+import { useToast } from "@/components/ui/use-toast";
+import { cn } from '@/lib/utils'
 
 export const Route = createFileRoute('/admin/ontology/designer')({
     component: OntologyDesigner,
@@ -17,33 +19,33 @@ type SuggestedClass = {
     properties: { name: string; type: string }[]
 }
 
-function OntologyDesigner() {
-    const [domain, setDomain] = useState('')
+export default function OntologyDesigner() {
+    const { isAvailable } = useAi();
+    const { toast } = useToast();
+    const [scenario, setScenario] = useState("");
     const [suggestions, setSuggestions] = useState<SuggestedClass[]>([])
-    const [loading, setLoading] = useState(false)
+    const [suggesting, setSuggesting] = useState(false) // Renamed from loading
     const [addingIds, setAddingIds] = useState<Record<number, boolean>>({})
     const [addedIds, setAddedIds] = useState<Record<number, boolean>>({})
     const [error, setError] = useState<string | null>(null)
 
     const handleSuggest = async () => {
-        if (!domain.trim()) return
-        setLoading(true)
+        if (!scenario.trim()) return
+        setSuggesting(true)
         setError(null)
         setAddedIds({})
         try {
-            const res = await fetch('/api/ai/suggest-ontology', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ context: domain }),
-                credentials: 'include'
-            })
-            if (!res.ok) throw new Error('Failed to get suggestions')
-            const data = await res.json()
+            const data = await ontologyApi.suggestOntology(scenario);
             setSuggestions(data)
         } catch (err: any) {
             setError(err.message)
+            toast({
+                title: "Failed to get suggestions",
+                description: err.message,
+                variant: "destructive",
+            });
         } finally {
-            setLoading(false)
+            setSuggesting(false)
         }
     }
 
@@ -75,8 +77,17 @@ function OntologyDesigner() {
             }
 
             setAddedIds(prev => ({ ...prev, [index]: true }))
+            toast({
+                title: "Class added successfully",
+                description: `Class '${cls.name}' and its properties have been added.`,
+            });
         } catch (err: any) {
             setError(err.message)
+            toast({
+                title: "Failed to add class",
+                description: err.message,
+                variant: "destructive",
+            });
         } finally {
             setAddingIds(prev => ({ ...prev, [index]: false }))
         }
@@ -108,17 +119,35 @@ function OntologyDesigner() {
                     <CardDescription>Describe your domain to get ontology class recommendations</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="e.g. A supply chain management system for electronics..."
-                            value={domain}
-                            onChange={e => setDomain(e.target.value)}
-                            className="bg-background"
+                    <div className="space-y-4">
+                        <textarea
+                            placeholder="Describe your domain (e.g. A library management system with books, authors, and borrows...)"
+                            className="w-full h-32 p-3 rounded-xl border bg-background/50 focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                            value={scenario}
+                            onChange={(e) => setScenario(e.target.value)}
                         />
-                        <Button onClick={handleSuggest} disabled={loading || !domain.trim()} className="gap-2">
-                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                            Suggest
+                        <Button
+                            className={cn(
+                                "w-full shadow-lg transition-all",
+                                isAvailable
+                                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"
+                                    : "from-gray-400 to-gray-500 cursor-not-allowed opacity-70"
+                            )}
+                            onClick={handleSuggest}
+                            disabled={suggesting || !scenario.trim() || !isAvailable}
+                        >
+                            {suggesting ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            ) : (
+                                <Sparkles className="h-4 w-4 mr-2" />
+                            )}
+                            {isAvailable ? "Generate Suggestions" : "AI Service Offline"}
                         </Button>
+                        {!isAvailable && (
+                            <p className="text-[10px] text-center text-rose-500 font-medium">
+                                Configure AI providers in Settings to enable this feature.
+                            </p>
+                        )}
                     </div>
 
                     {error && (
@@ -164,27 +193,31 @@ function OntologyDesigner() {
             </Card>
 
             <div className="grid gap-6 md:grid-cols-2">
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardHeader>
-                        <Database className="h-8 w-8 text-primary mb-2" />
-                        <CardTitle>Class Designer</CardTitle>
-                        <CardDescription>Define entity types and attributes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        Manage ontology classes and their properties.
-                    </CardContent>
-                </Card>
+                <Link to="/admin/ontology/Classes">
+                    <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                        <CardHeader>
+                            <Database className="h-8 w-8 text-primary mb-2" />
+                            <CardTitle>Class Designer</CardTitle>
+                            <CardDescription>Define entity types and attributes</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            Manage ontology classes and their properties.
+                        </CardContent>
+                    </Card>
+                </Link>
 
-                <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-                    <CardHeader>
-                        <Database className="h-8 w-8 text-primary mb-2" />
-                        <CardTitle>Relationship Designer</CardTitle>
-                        <CardDescription>Define links between classes</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        Manage relationship types and cardinality rules.
-                    </CardContent>
-                </Card>
+                <Link to="/admin/ontology/Relationships">
+                    <Card className="cursor-pointer hover:bg-muted/50 transition-colors h-full">
+                        <CardHeader>
+                            <Database className="h-8 w-8 text-primary mb-2" />
+                            <CardTitle>Relationship Designer</CardTitle>
+                            <CardDescription>Define links between classes</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            Manage relationship types and cardinality rules.
+                        </CardContent>
+                    </Card>
+                </Link>
             </div>
         </div>
     )
