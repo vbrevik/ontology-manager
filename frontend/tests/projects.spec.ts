@@ -55,6 +55,20 @@ test.describe('Projects Module E2E', () => {
         await page.getByRole('button', { name: 'Sign in' }).click();
         await expect(page.getByRole('heading', { name: 'System Overview' })).toBeVisible({ timeout: 10000 });
 
+        // Mark current user as test user so all their data is marked as test data
+        await page.evaluate(async () => {
+            try {
+                await fetch('/api/test/mark-current-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ test_suite: 'e2e', test_name: 'projects' }),
+                });
+            } catch (e) {
+                console.warn('Failed to mark user as test:', e);
+            }
+        });
+
         await page.goto('/projects');
     });
 

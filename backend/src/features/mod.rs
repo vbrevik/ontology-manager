@@ -13,3 +13,4 @@ pub mod rebac;
 pub mod system;
 pub mod users;
 pub mod monitoring;
+pub mod test_marker;

@@ -84,6 +84,24 @@ impl ProjectService {
             .await?;
         }
 
+        // Check if owner is a test user and mark project as test data
+        let owner_is_test = sqlx::query_scalar::<_, bool>(
+            "SELECT is_test_data($1)"
+        )
+        .bind(owner_id)
+        .fetch_one(&self.pool)
+        .await?;
+
+        if owner_is_test {
+            // Mark this project as test data
+            let _ = sqlx::query(
+                "SELECT mark_as_test_data($1, 'e2e', 'auto-marked via test user')"
+            )
+            .bind(id)
+            .execute(&self.pool)
+            .await;
+        }
+
         // Create has_sub_project relationship if parent provided
         if let Some(parent_id) = input.parent_project_id {
             let sub_rt = sqlx::query_scalar::<_, Uuid>(
@@ -146,8 +164,12 @@ impl ProjectService {
             .map(|e| e.entity_id)
             .collect();
 
+        // Filter out test data for non-admin users
         let mut projects = sqlx::query_as::<_, Project>(
-            "SELECT id, name, description, status, start_date, end_date, created_at, updated_at, tenant_id, owner_id, parent_project_id FROM unified_projects WHERE id = ANY($1)"
+            "SELECT id, name, description, status, start_date, end_date, created_at, updated_at, tenant_id, owner_id, parent_project_id 
+             FROM unified_projects 
+             WHERE id = ANY($1) 
+             AND NOT is_test_data(id)"
         )
         .bind(&accessible_ids)
         .fetch_all(&self.pool)
