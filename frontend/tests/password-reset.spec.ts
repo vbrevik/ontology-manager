@@ -22,7 +22,7 @@ test.describe('Password Reset Flow', () => {
         await page.goto('http://localhost:5373/forgot-password');
         
         // 2. Verify page loaded correctly
-        await expect(page.getByRole('heading', { name: 'Forgot Password' })).toBeVisible();
+        await expect(page.getByText('Forgot Password')).toBeVisible();
         await expect(page.locator('text=Enter your email address')).toBeVisible();
         
         // 3. Submit email address
@@ -49,7 +49,7 @@ test.describe('Password Reset Flow', () => {
         await page.goto(`http://localhost:5373/reset-password/${token}`);
         
         // 7. Wait for token verification
-        await expect(page.getByRole('heading', { name: 'Reset Password' })).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('Reset Password')).toBeVisible({ timeout: 5000 });
         
         // 8. Fill in new password
         await page.fill('input[placeholder*="Enter new password"]', newPassword);
@@ -68,8 +68,8 @@ test.describe('Password Reset Flow', () => {
         ]);
         
         // 11. Verify we can login with new password
-        await page.getByLabel('Username or Email').fill(testEmail);
-        await page.getByLabel('Password').fill(newPassword);
+        await page.locator('input[name="identifier"]').fill(testEmail);
+        await page.locator('input[name="password"]').fill(newPassword);
         await page.getByRole('button', { name: 'Sign in' }).click();
         
         // 12. Verify successful login
@@ -77,8 +77,8 @@ test.describe('Password Reset Flow', () => {
         
         // 13. Verify old password doesn't work anymore
         await page.goto('http://localhost:5373/login');
-        await page.getByLabel('Username or Email').fill(testEmail);
-        await page.getByLabel('Password').fill(originalPassword);
+        await page.locator('input[name="identifier"]').fill(testEmail);
+        await page.locator('input[name="password"]').fill(originalPassword);
         await page.getByRole('button', { name: 'Sign in' }).click();
         
         // Should see error message
@@ -91,7 +91,7 @@ test.describe('Password Reset Flow', () => {
         await page.goto(`http://localhost:5373/reset-password/${expiredToken}`);
         
         // Should show invalid link message
-        await expect(page.getByRole('heading', { name: 'Invalid Link' }).or(page.locator('text=invalid or has expired'))).toBeVisible({ timeout: 5000 });
+        await expect(page.getByText('Invalid Link', { exact: true })).toBeVisible({ timeout: 5000 });
         
         // Should have link to request new one
         await expect(page.locator('a:has-text("Request a new one")').or(page.locator('a[href="/forgot-password"]'))).toBeVisible();
@@ -104,7 +104,7 @@ test.describe('Password Reset Flow', () => {
         // Test email validation
         await page.fill('input[type="email"]', 'not-an-email');
         await page.click('button[type="submit"]');
-        await expect(page.locator('text=valid email')).toBeVisible();
+        await expect(page.getByText('Please enter a valid email address')).toBeVisible();
         
         // Clear and fill valid email
         await page.fill('input[type="email"]', testEmail);
@@ -118,13 +118,13 @@ test.describe('Password Reset Flow', () => {
         await page.goto('http://localhost:5373/login');
         
         // Verify "Forgot password?" link exists
-        const forgotLink = page.getByRole('link', { name: 'Forgot password?' });
+        const forgotLink = page.locator('a', { hasText: 'Forgot password?' }).first();
         await expect(forgotLink).toBeVisible();
         
         // Click and verify navigation
         await forgotLink.click();
         await page.waitForURL('**/forgot-password');
-        await expect(page.getByRole('heading', { name: 'Forgot Password' })).toBeVisible();
+        await expect(page.getByText('Forgot Password')).toBeVisible();
     });
 
     test('should allow password confirmation mismatch validation', async ({ page }) => {

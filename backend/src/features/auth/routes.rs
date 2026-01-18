@@ -407,10 +407,17 @@ pub struct DebugAuthResponse {
 async fn list_sessions_handler(
     State(auth_service): State<AuthService>,
     Extension(claims): Extension<crate::features::auth::jwt::Claims>,
+    cookies: Cookies,
 ) -> Result<Json<Vec<crate::features::auth::models::SessionResponse>>, AuthError> {
     let user_id = uuid::Uuid::parse_str(&claims.sub).map_err(|_| AuthError::UserNotFound)?;
+    
+    // Extract refresh token JTI from cookie for current session marking
+    let current_token_id = cookies
+        .get("refresh_token")
+        .and_then(|cookie| auth_service.extract_refresh_token_jti(cookie.value()).ok());
+    
     let sessions = auth_service
-        .list_active_sessions(user_id, claims.jti)
+        .list_active_sessions(user_id, current_token_id)
         .await?;
     Ok(Json(sessions))
 }

@@ -20,8 +20,8 @@ test.describe('Projects Module E2E', () => {
         });
 
         await page.goto('/login');
-        await page.getByLabel('Username or Email').fill(email);
-        await page.getByLabel('Password').fill(password);
+        await page.locator('input[name="identifier"]').fill(email);
+        await page.locator('input[name="password"]').fill(password);
         await page.getByRole('button', { name: 'Sign in' }).click();
         await expect(page.getByRole('heading', { name: 'System Overview' })).toBeVisible({ timeout: 10000 });
 

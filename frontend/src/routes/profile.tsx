@@ -216,7 +216,7 @@ function Profile() {
           <CardHeader className="py-4 px-5 bg-muted/30 border-b border-border/40">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
               <Shield size={18} className="text-primary" />
-              Active Sessions
+              <h2 className="text-base font-semibold">Active Sessions</h2>
             </CardTitle>
           </CardHeader>
           <CardContent className="py-3 px-0">

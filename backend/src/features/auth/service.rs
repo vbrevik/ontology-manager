@@ -130,6 +130,13 @@ impl AuthService {
         &self.abac_service
     }
 
+    /// Extract JTI from refresh token for session comparison
+    pub fn extract_refresh_token_jti(&self, token: &str) -> Result<String, AuthError> {
+        let claims = crate::features::auth::jwt::validate_jwt(token, &self.config)
+            .map_err(|e| AuthError::JwtError(e.to_string()))?;
+        claims.jti.ok_or_else(|| AuthError::JwtError("Missing jti in refresh token".to_string()))
+    }
+
     #[allow(dead_code)]
     const USER_ENTITY_QUERY: &'static str = "SELECT * FROM unified_users WHERE 1=1";
 
