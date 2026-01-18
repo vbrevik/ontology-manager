@@ -1,0 +1,58 @@
+# Add these environment variables to your backend service in docker-compose.yml
+# for Phase 3: Monitoring & Alerting
+
+environment:
+  # ... existing vars ...
+  
+  # =====================================================
+  # MONITORING & ALERTING (Phase 3)
+  # =====================================================
+  
+  # Slack Integration
+  - SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+  
+  # Discord Integration
+  - DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR/WEBHOOK/URL
+  
+  # PagerDuty Integration (for critical alerts)
+  - PAGERDUTY_INTEGRATION_KEY=your_pagerduty_integration_key
+  
+  # Custom Webhook (optional)
+  - CUSTOM_WEBHOOK_URL=https://your-webhook.example.com/alerts
+  
+  # Alert Configuration
+  - ALERT_CHECK_INTERVAL=60  # Check for triggered alerts every N seconds
+  - ENABLE_MONITORING=true
+  
+  # Log Level
+  - RUST_LOG=info,monitoring=debug
+
+# Example: Full backend service with monitoring
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5300:5300"
+    environment:
+      - DATABASE_URL=postgres://app:${DB_PASSWORD}@db:5432/app_db?sslmode=disable
+      - FRONTEND_URL=http://localhost:5173
+      - BACKEND_PORT=5300
+      - JWT_SECRET_KEY=/app/keys/jwt_secret_key
+      - ENABLE_MONITORING=true
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL}
+      - RUST_LOG=info,monitoring=debug
+    networks:
+      - frontend_net
+      - backend_net
+      - data_net
+    depends_on:
+      - db
+    restart: unless-stopped
+
+# Create .env file with your webhook URLs:
+# 
+# SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+# DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/YOUR/WEBHOOK/URL
+# PAGERDUTY_INTEGRATION_KEY=your_key_here
