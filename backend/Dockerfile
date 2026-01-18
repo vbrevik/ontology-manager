@@ -21,6 +21,10 @@ COPY migrations ./migrations
 COPY data ./data
 COPY config ./config
 COPY keys ./keys
+COPY .sqlx ./.sqlx
+
+# Set SQLX offline mode for Docker builds (no database connection needed)
+ENV SQLX_OFFLINE=true
 
 # Build release binary
 RUN cargo build --release
