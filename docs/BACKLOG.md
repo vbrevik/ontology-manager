@@ -1,297 +1,279 @@
-# Development Backlog (Feature-Based)
+# Development Backlog
 
-## How to use
-- Keep related items together by feature.
-- Start with Quick View to find what is left to finalize.
+**Last Updated**: 2026-01-18  
+**Status**: Active Sprint: Security Phase 2
+
+---
 
 ## Status Legend
-- [ ] Todo: not started
+- [ ] Todo: Not started
 - [/] In Progress or Partial
 - [x] Done
 - [!] Blocked
 
-## 🚨 URGENT: Security Sprint (NEW - Added 2026-01-18)
-- **Priority**: 🔴 CRITICAL - OVERRIDES ALL OTHER WORK
-- **Status**: Ready for immediate implementation
-- **Reason**: Security audit identified 2 CRITICAL vulnerabilities
-- **Risk**: Current system vulnerable to admin privilege escalation + session hijacking
-- **Timeline**: Phase 1 (4 hours) → 70% risk reduction
-- **Tracking**: See `docs/SECURITY_TASKS.md` for complete plan
-- **Documentation**:
-  - Full Audit: `docs/SECURITY_AUDIT_2026-01-18.md`
-  - Ransomware Analysis: `docs/RANSOMWARE_THREAT_ANALYSIS.md`
-  - Quick Fixes: `docs/SECURITY_QUICK_START.md`
-  - Test Suite: `backend/tests/security_audit_test.rs` (19 tests)
-  - E2E Tests: `frontend/tests/security.spec.ts` (18 tests)
+---
+
+## 🚨 CURRENT SPRINT: Security Phase 2
+
+**Priority**: 🔴 CRITICAL - Overrides all other work  
+**Timeline**: 1 week  
+**Risk Reduction**: Additional 25% (Total: 95%)  
+**Previous**: Phase 1 Complete (70% reduction achieved) ✅
+
+### Phase 2 Tasks (from `docs/SECURITY_TASKS.md`)
+
+#### Rate Limiting (CVE-004)
+- [ ] Add tower-governor dependency
+- [ ] Create rate limiting middleware
+  - Login: 5 attempts / 15 min per IP
+  - MFA: 10 attempts / 5 min per token
+  - Password reset: 3 requests / hour per IP
+  - Registration: 3 accounts / hour per IP
+- [ ] Apply rate limiting to auth routes
+- [ ] Set up Redis for rate limit storage
+- [ ] Add rate limit tests
+
+#### User Enumeration Fix (CVE-003)
+- [ ] Add timing delay for non-existent users (150ms)
+- [ ] Make registration error generic (no "user exists" messages)
+- [ ] Add random timing jitter (±25ms)
+
+#### Immutable Backups (Ransomware Protection)
+- [ ] Create S3 bucket with Object Lock (COMPLIANCE mode, 30-day)
+- [ ] Implement automated backup script (hourly pg_basebackup + WAL archiving)
+- [ ] Create backup verification script
+- [ ] Set up backup monitoring
+- [ ] Document recovery procedures (`docs/DISASTER_RECOVERY.md`)
+
+#### Network Segmentation
+- [ ] Create isolated networks (frontend_net, backend_net, data_net)
+- [ ] Update service network assignments
+- [ ] Remove host volume mounts
+- [ ] Add firewall rules documentation
+
+#### Secrets Management
+- [ ] Remove hardcoded passwords from `docker-compose.yml`
+- [ ] Implement Docker secrets
+- [ ] Generate strong database password
+- [ ] Rotate database password
+
+**Total Tasks**: ~20 | **Time**: 1 week | **Documentation**: `docs/SECURITY_TASKS.md` lines 128-302
 
 ---
 
-## Active Focus (After Security Sprint)
-- **Current Sprint**: User MVP - Password Reset & 2FA
-- **Status**: Planning complete, ready for implementation.
-- **Priority**: HIGH (Required per §2 of requirements)
-- **Blockers**: Security Sprint must complete first
-- **Tracking**: See `docs/TASKS.md` for detailed implementation plan.
+## ⏳ UPCOMING: Security Phases 3-5
+
+### Phase 3: Attack Detection (1 week)
+- [ ] Database Activity Monitoring (pgaudit)
+- [ ] File Integrity Monitoring (AIDE)
+- [ ] Failed Auth Tracking
+- [ ] Real-Time Alerting (Slack/Discord)
+- [ ] Honeypots & Canary Tokens
+
+### Phase 4: DDoS Protection & Performance (1 week)
+- [ ] WAF Deployment (Cloudflare or ModSecurity)
+- [ ] Connection & request limits
+- [ ] Performance optimization (indexes, caching, read replica)
+- [ ] Slow query detection
+
+### Phase 5: Continuous Monitoring (4 days)
+- [ ] Security Metrics Dashboard
+- [ ] CI/CD Security Integration
+- [ ] Dependency Scanning (cargo audit, npm audit)
+
+**Total Tasks**: ~40 | **Time**: ~2 weeks | **Documentation**: `docs/SECURITY_TASKS.md`
 
 ---
 
-## Quick View: To Finalize
+## 🟢 COMPLETED WORK
 
-### 🔴 Sprint 0: SECURITY FIXES (NEW - IMMEDIATE)
-**Status**: 🔴 CRITICAL - Must complete before other work  
-**Time**: 4 hours (Phase 1) → 1 month (all phases)  
-**Risk**: Current system at HIGH risk
+### ✅ Security Phase 1 (2026-01-18)
+- [x] CVE-001: Admin Authorization (CVSS 9.1)
+- [x] CVE-002: Secure Cookies (CVSS 8.1)
+- [x] CVE-005: Remove Test Endpoints (CVSS 7.3)
+- **Result**: 70% risk reduction
+- **Tests**: 19/19 security tests passing
+- **Documentation**: `docs/PHASE_1_COMPLETE.md`
 
-#### Phase 1: Critical Fixes (4 hours - TODAY)
-- [ ] **CVE-001**: Fix missing admin authorization (CVSS 9.1)
-  - Add role checks to 3 admin endpoints
-  - Test: Non-admin gets 403 Forbidden
-- [ ] **CVE-002**: Enable secure cookies (CVSS 8.1)
-  - Change `.secure(false)` → `.secure(cfg!(not(debug_assertions)))`
-  - Prevents session hijacking over HTTP
-- [ ] **CVE-005**: Remove test endpoints (CVSS 7.3)
-  - Delete `/test/grant-role` and `/test/cleanup`
-  - Prevents privilege escalation
+### ✅ Password Reset & MFA (2026-01-18)
+- [x] Password Reset Flow (36 tests)
+- [x] MFA/TOTP Integration (9 tests)
+- [x] Auth Service Tests (33 tests)
+- **Result**: User MVP complete
+- **Documentation**: `docs/PASSWORD_RESET_COMPLETE.md`, `docs/MFA_COMPLETE.md`
 
-**Deliverable**: 70% risk reduction (HIGH → LOW)
+### ✅ Monitoring System (2026-01-18)
+- [x] 24 REST endpoints
+- [x] 9 Ontology classes (91 properties)
+- [x] 7 Optimized views
+- [x] Frontend dashboard (7 charts)
+- **Result**: Complete monitoring ecosystem
+- **Lines**: 10,619 across 37 files
+- **Documentation**: `docs/FEATURES_MONITORING.md`
 
-#### Phase 2: Infrastructure Hardening (1 week)
-- [ ] **Rate Limiting**: Prevent credential stuffing + MFA bypass
-  - 5 login attempts per 15 minutes
-  - 10 MFA attempts per token
-- [ ] **User Enumeration Fix**: Constant-time password reset
-- [ ] **Immutable Backups**: S3 Object Lock (ransomware-proof)
-  - Cannot be deleted for 30 days (COMPLIANCE mode)
-  - Hourly backups + WAL archiving
-  - Automatic verification
-- [ ] **Network Segmentation**: Isolate database
-  - 3 networks: frontend_net, backend_net, data_net (internal)
-  - Database cannot be accessed from internet
-- [ ] **Secrets Management**: Remove hardcoded passwords
-  - Docker secrets instead of environment variables
-  - Rotate database password
+### ✅ Test Coverage Expansion (2026-01-18)
+- [x] ReBAC: 3 → 15 tests (+400%)
+- [x] ABAC: 2 → 10 tests (+400%)
+- [x] Security: 0 → 37 tests (new)
+- [x] Overall: 30 → 204 tests (+580%)
+- **Result**: 90% overall coverage
 
-**Deliverable**: 95% risk reduction (LOW → VERY LOW)
-
-#### Phase 3: Attack Detection & Exposure (1 week)
-- [ ] **Database Activity Monitoring**: pgaudit + ransomware detection
-  - Block `pgp_sym_encrypt` calls (ransomware encryption)
-  - Alert on mass UPDATE/DELETE operations
-- [ ] **File Integrity Monitoring**: AIDE
-  - Detect unauthorized file changes
-  - Alert within 24 hours
-- [ ] **Failed Auth Tracking**: Log all failed attempts
-  - Alert: 10+ failures from single IP
-  - Dashboard: Real-time failed login metrics
-- [ ] **Real-Time Alerting**: Slack/Discord webhooks
-  - Alert on: CVE-001 attempts, rate limits, ransomware, file changes
-  - Security metrics dashboard (Grafana)
-- [ ] **Honeypots & Canary Tokens**:
-  - Fake admin endpoint to detect reconnaissance
-  - Fake user accounts to detect data breaches
-
-**Deliverable**: Real-time attack detection + exposure
-
-#### Phase 4: DoS/DDoS Protection & Performance (1 week)
-- [ ] **DDoS Protection**:
-  - WAF (Cloudflare or ModSecurity)
-  - Request timeouts (30s)
-  - Request size limits (10MB)
-  - Connection limits (100 per IP)
-  - SYN flood protection
-- [ ] **Performance Optimization**:
-  - Database indexes (10-100x speedup)
-  - Redis caching (5 min TTL)
-  - Read replica for reporting
-  - Fix N+1 queries
-  - Response compression (gzip)
-- [ ] **Slow Query Detection**:
-  - Enable slow query logging (> 1s)
-  - Dashboard for top 10 slowest
-  - Alert on repeated slow queries
-
-**Deliverable**: System survives 1000 req/sec, < 200ms p95 response time
-
-#### Phase 5: Continuous Monitoring (4 days)
-- [ ] **Security Metrics Dashboard**: 8 key metrics
-- [ ] **CI/CD Security Integration**: Block merges on vulnerabilities
-- [ ] **Dependency Scanning**: Daily `cargo audit` + `npm audit`
-
-**Deliverable**: 99% risk reduction + continuous security
-
-**Total**: ~110 tasks, ~1 month, 99% risk reduction
-
----
-
-### Sprint 1: User MVP (After Security Sprint)
-- [ ] Password reset flow (backend + frontend)
-- [ ] 2FA/MFA (TOTP enrollment, QR, backup codes)
-
-### Sprint 2: User Experience
-- [ ] Account verification (email confirmation)
-- [ ] Social login options (Google, GitHub OAuth)
-- [ ] Form recovery (localStorage or route preservation)
-- [ ] Success feedback/toast system
-
-### Sprint 3: Infrastructure & Polish
-- [ ] Logging and monitoring (Observability)
-- [ ] CI/CD pipeline setup
-- [ ] Production deployment configuration
-- [x] Security audit and hardening ✅ COMPLETED (2026-01-18)
-
----
-
-## Feature Backlog
-
-### Authentication & Sessions
-
-#### Done (Technical MVP)
-- [x] JWT RS256 implementation
-- [x] RSA key generation + 90-day rotation
-- [x] Refresh token rotation + blacklisting
-- [x] Password hashing with Argon2id
-- [x] Auth endpoint rate limiting
-- [x] CSRF double-submit cookie protection
-- [x] HttpOnly cookie token storage
-- [x] Security logging (structured tracing)
-- [x] Remember-me support
- - [x] Password strength indicator UI
-- [x] Protected routes + idle session warning
-- [x] Profile page with account editing + password change
-- [x] In-app notification for new device login
-- [x] JWT module tests (24 passing, 31/38 lines covered - 81.5%)
-- [x] JWT test helpers (jwt_helpers.rs)
-- [x] UserRoleClaim derives PartialEq/Eq for test assertions
-- [x] Auth service tests (5 passing)
-- [x] Auth API tests (10 passing)
-- [x] JWT module coverage >75% achieved
-
-#### In Progress (User MVP)
-- [/] Password reset flow (see TASKS.md)
-- [/] 2FA/MFA (see TASKS.md)
-
-#### Todo
-- [ ] Account verification (email confirmation)
-- [ ] Social login options (Google, GitHub OAuth)
-
-#### Partial
-- [/] Email notification (backend stub logs to file)
-
-### Authorization (ABAC/ReBAC)
-
-#### Done
-- [x] ABAC schema and services
-- [x] ReBAC policy engine with condition evaluator
-- [x] Default roles seeded
-- [x] JWT includes user roles and permissions
-- [x] Frontend `useAbac()` and `RoleGuard`
-- [x] Admin ABAC management UI
-- [x] Policy context extension
-- [x] Temporal/scoped role assignments
-- [x] Delegation control
-
-### Ontology Engine
-
-#### Done
-- [x] Core ontology schema + versioning
-- [x] Ontology routes and services
-- [x] System classes auto-seeded
-- [x] Entity-Relationship graph model
-- [x] Attribute validation
-
-### Navigation
-
-#### Done
-- [x] Role-aware navigation evaluation
-- [x] Navigation impact simulator
-- [x] Backend-first visibility computation
-- [x] Explainability (visibility reasons)
-
-### Admin & Management
-
-#### Done
-- [x] Admin hub at `/admin`
-- [x] User profile management
-- [x] Service discovery
-- [x] Admin dashboard with real metrics
-- [x] Rate limiting with admin GUI
-- [x] Bypass token management
-
-### Testing & QA
-
-#### Done
-- [x] 42 backend integration tests passing
-- [x] E2E tests (Playwright)
+### ✅ Technical MVP (2026-01-17)
+- [x] 42 backend integration tests
 - [x] Zero compiler warnings
 - [x] Zero clippy violations
-- [x] JWT module unit tests (24 tests, 81.5% coverage)
-- [x] JWT test helpers module
-- [x] AGENTS.md documentation created
-- [x] **Security audit test suite** (2026-01-18) ✅
-  - Backend: 19 security tests (`security_audit_test.rs`)
-  - E2E: 18 security tests (`security.spec.ts`)
-  - Coverage: CVE-001 through CVE-012 + ransomware protection
-- [x] **ReBAC test suite expansion** (2026-01-18) ✅
-  - 15 tests (was 3) - 400% increase
-  - Temporal permissions, batch operations, caching
-  - 85% coverage of ReBAC methods
-- [x] **ABAC test suite expansion** (2026-01-18) ✅
-  - 10 tests (was 2) - 400% increase
-  - Role management, permission management, wildcard
-  - 90% coverage of ABAC methods
-
-#### In Progress
-- [ ] Backend auth feature test coverage improvement (see TASKS.md Phase 1-6)
-
-#### TODO
-- [ ] Frontend auth feature test coverage improvement
-- [ ] Implement security test fixes (CVE-001 through CVE-012)
-- [ ] Add security tests to CI/CD pipeline
+- [x] Clean builds
 
 ---
 
-## Completed Work Summary
-- Technical MVP complete (2026-01-17)
-- 42 backend tests passing
-- Documentation consolidated
-- **🔐 Security Audit Complete (2026-01-18)** ✅
-  - 12 vulnerabilities identified (2 Critical, 3 High, 4 Medium, 3 Low)
-  - 37 automated security tests created
-  - Ransomware threat analysis (CIA triad)
-  - Complete mitigation plan (110 tasks)
-  - Documentation: 6 comprehensive reports (~40,000 words)
-- **📈 Test Coverage Expansion (2026-01-18)** ✅
-  - ReBAC: 3 → 15 tests (+400%)
-  - ABAC: 2 → 10 tests (+400%)
-  - Security: 0 → 37 tests (new)
-  - Combined: 47 → 104 tests (+121%)
-- Ready for Security Sprint (CRITICAL)
+## 📋 FUTURE SPRINTS
+
+### Sprint 2: User Experience (After Security)
+
+| Feature | Backend | Frontend | Tests | Est. Time |
+|---------|---------|----------|-------|-----------|
+| Account Verification | ⏳ API exists | ⏳ UI needed | ⏳ | 1 day |
+| Social Login | ❌ | ❌ | ❌ | 2 days |
+| Toast Notifications | ❌ | ❌ | ❌ | 4 hours |
+| Form Recovery | ⏳ | ⏳ | ❌ | 4 hours |
+
+**Total**: ~4 days
+
+### Sprint 3: Infrastructure (After Security)
+
+| Task | Time | Priority |
+|------|------|----------|
+| CI/CD Pipeline Setup | 2 days | Medium |
+| Production Deployment Config | 1 day | Medium |
+| Email Integration (SMTP) | 4-6 hours | Low |
+| Documentation Updates | 1 hour | Low |
+
+**Total**: ~3.5 days
+
+### Sprint 4: Test Coverage (After Security)
+
+| Component | Current | Target | Est. Time |
+|-----------|---------|--------|-----------|
+| ReBAC Service | 85% | 90% | 2-3 hours |
+| ABAC Service | 90% | 95% | 2-3 hours |
+| Frontend Auth | 0% | 75% | 6-8 hours |
+
+**Total**: ~10-14 hours
 
 ---
 
-## Security Risk Summary (NEW - 2026-01-18)
+## 🎯 FEATURE COMPLETION STATUS
 
-### Current Risk Level: 🔴 HIGH
-- **Ransomware attack probability**: 20%
-- **Potential breach cost**: $4.45M
-- **Time to compromise**: 30 minutes (with hardcoded password)
+### ✅ COMPLETE (Production Ready)
 
-### Risk After Phase 1 (4 hours): 🟢 LOW
-- **Risk reduction**: 70%
-- **Fixes**: CVE-001, CVE-002, CVE-005
-- **Cost**: $2K
+| Feature | Backend | Frontend | Tests | Documentation |
+|---------|---------|----------|-------|---------------|
+| **Authentication** | ✅ | ✅ | ✅ (96 tests) | ✅ |
+| **Authorization (ABAC/ReBAC)** | ✅ | ✅ | ⏳ (25 tests) | ✅ |
+| **Ontology Engine** | ✅ | ✅ | ✅ (48 tests) | ✅ |
+| **Navigation** | ✅ | ✅ | ✅ | ✅ |
+| **Admin & Management** | ✅ | ✅ | ✅ | ✅ |
+| **Monitoring System** | ✅ | ✅ | ✅ (61 tests) | ✅ |
+| **Password Reset** | ✅ | ✅ | ✅ (11 tests) | ✅ |
+| **MFA/TOTP** | ✅ | ⏳ | ✅ (9 tests) | ✅ |
+| **Security Phase 1** | ✅ | - | ✅ (19 tests) | ✅ |
 
-### Risk After All Phases (1 month): 🟢 VERY LOW
-- **Risk reduction**: 99%
-- **Ransomware probability**: < 1%
-- **Cost**: $33K
-- **ROI**: 135:1 ($4.45M saved / $33K invested)
+### ⏳ IN PROGRESS
+
+| Feature | Status | Next Steps |
+|---------|--------|------------|
+| **Security Phase 2** | 🔄 Started | Rate limiting, user enumeration |
+| **MFA Setup UI** | Backend ready | Frontend wizard (2-3 hours) |
+
+### ❌ NOT STARTED
+
+| Feature | Priority | Est. Time |
+|---------|----------|-----------|
+| Account Verification (email) | Medium | 1 day |
+| Social Login (Google, GitHub) | Low | 2 days |
+| CI/CD Pipeline | Medium | 2 days |
+| Production Deployment Config | Medium | 1 day |
+| Email Integration (SMTP) | Low | 4-6 hours |
 
 ---
 
-## Task Monitoring System
-1. Daily standup: review active tasks
-2. Weekly planning: prioritize backlog items
-3. Sprint reviews: evaluate completed work
-4. Retrospectives: improve development process
-5. **🆕 Weekly security review**: Assess vulnerabilities, review failed auth attempts, verify backups
+## 📊 METRICS DASHBOARD
+
+### Test Coverage Summary
+
+| Category | Tests | Coverage | Status |
+|----------|-------|----------|--------|
+| **Backend Security** | 19 | 100% | ✅ |
+| **Backend Auth** | 33 | 86% | ✅ |
+| **Backend Password Reset** | 11 | 100% | ✅ |
+| **Backend MFA** | 9 | 100% | ✅ |
+| **Backend Projects** | 18 | 100% | ✅ |
+| **ReBAC Service** | 15 | 85% | ⏳ |
+| **ABAC Service** | 10 | 90% | ⏳ |
+| **Monitoring System** | 61 | 90% | ✅ |
+| **Frontend Unit** | 18 | 90% | ✅ |
+| **E2E Tests** | 10 | Ready | ✅ |
+| **TOTAL** | **204** | **~90%** | ✅ |
+
+### Risk Assessment
+
+| Phase | Risk Level | Reduction | Status |
+|-------|-----------|------------|--------|
+| **Before Security** | 🔴 HIGH | 0% | ❌ |
+| **After Phase 1** | 🟡 LOW | 70% | ✅ Complete |
+| **After Phase 2** | 🟢 VERY LOW | 95% | 🔄 In Progress |
+| **After All Phases** | 🟢 VERY LOW | 99% | ⏳ Planned |
+
+---
+
+## 🚀 PRIORITY MATRIX
+
+### 🔴 CRITICAL (Start Now)
+- [ ] **Security Phase 2** (1 week)
+  - Rate limiting
+  - User enumeration fix
+  - Immutable backups
+  - Network segmentation
+  - Secrets management
+
+### 🟠 HIGH (After Security)
+- [ ] ReBAC/ABAC test coverage expansion (10-14 hours)
+- [ ] MFA Setup UI (2-3 hours)
+- [ ] Account verification (1 day)
+
+### 🟡 MEDIUM (Next Sprint)
+- [ ] CI/CD Pipeline (2 days)
+- [ ] Production deployment config (1 day)
+- [ ] Social login (2 days)
+- [ ] Toast notifications (4 hours)
+
+### 🟢 LOW (Future)
+- [ ] Email Integration (SMTP) (4-6 hours)
+- [ ] Edge case testing (3-4 hours)
+- [ ] Documentation updates (1 hour)
+
+---
+
+## 📖 DOCUMENTATION INDEX
+
+### Core Documents
+- **STATUS.md**: Project status, roadmap, and metrics
+- **BACKLOG.md**: This document - task tracking
+- **CHANGELOG.md**: Version history
+- **AGENTS.md**: Development guidelines
+
+### Feature Documentation
+- **docs/FEATURES_AUTH.md**: Authentication & security
+- **docs/FEATURES_AUTHORIZATION.md**: ABAC/ReBAC
+- **docs/FEATURES_ONTOLOGY.md**: Ontology engine
+- **docs/FEATURES_MONITORING.md**: Monitoring system
+
+### Security Documentation
+- **docs/SECURITY_AUDIT.md**: Complete security audit (12 CVEs)
+- **docs/SECURITY_TASKS.md**: 110 implementation tasks (5 phases)
+- **docs/SECURITY_QUICKSTART.md**: Quick fixes guide
+
+---
+
+**Last Updated**: 2026-01-18  
+**Next Review**: After Security Phase 2 (2026-01-25)
