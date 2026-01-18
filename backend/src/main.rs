@@ -193,14 +193,22 @@ async fn main() {
                     features::auth::routes::protected_auth_routes()
                         .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                         .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
-                ),
+                )
+                .layer(axum::middleware::from_fn_with_state(
+                    rate_limit_service.clone(),
+                    features::rate_limit::middleware::rate_limit_middleware,
+                )),
         )
         .nest(
             "/auth/mfa",
             features::auth::routes::mfa_routes()
                 .with_state(mfa_state)
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
-                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf))
+                .layer(axum::middleware::from_fn_with_state(
+                    rate_limit_service.clone(),
+                    features::rate_limit::middleware::rate_limit_middleware,
+                )),
         )
         .merge(
             features::dashboard::routes::dashboard_routes()
@@ -293,22 +301,14 @@ async fn main() {
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         );
 
-    // CVE-004 Fix: Create rate limiter for auth endpoints
-    let rate_limiter = Arc::new(middleware::rate_limit::RateLimiter::new(5, 15 * 60));
-    
-    // Spawn cleanup task for rate limiter
-    let limiter_clone = rate_limiter.clone();
-    tokio::spawn(async move {
-        middleware::rate_limit::cleanup_task(limiter_clone).await;
-    });
+    // CVE-004 Fix: Rate limiting is handled by the database-backed service
+    // The simple in-memory rate limiter has been replaced with proper database rules
 
     let app = Router::new()
         .route("/health", get(health_check))
         .nest("/api", api_router)
         .with_state(auth_service.clone())
         .layer(tower_cookies::CookieManagerLayer::new())
-        .layer(axum::Extension(rate_limiter.clone()))
-        .layer(axum::middleware::from_fn(middleware::rate_limit::rate_limit_middleware))
         .layer(axum::Extension(config_arc))
         .layer(
             CorsLayer::new()

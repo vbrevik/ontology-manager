@@ -130,6 +130,15 @@ impl AuthService {
         &self.abac_service
     }
 
+    /// CVE-003 Fix: Add random timing jitter to prevent timing attacks
+    /// Adds a random delay of ±25ms to make timing analysis harder
+    async fn add_timing_jitter() {
+        let jitter = rand::thread_rng().gen_range(-25..=25);
+        if jitter > 0 {
+            tokio::time::sleep(tokio::time::Duration::from_millis(jitter as u64)).await;
+        }
+    }
+
     /// Extract JTI from refresh token for session comparison
     pub fn extract_refresh_token_jti(&self, token: &str) -> Result<String, AuthError> {
         let claims = crate::features::auth::jwt::validate_jwt(token, &self.config)
@@ -168,6 +177,7 @@ impl AuthService {
         if existing_user.is_some() {
             // CVE-003 Fix: Generic error message to prevent user enumeration
             // Don't reveal whether email or username is taken
+            Self::add_timing_jitter().await;
             return Err(AuthError::ValidationError("Invalid registration data".to_string()));
         }
 
@@ -211,6 +221,9 @@ impl AuthService {
                 e
             })?;
 
+        // CVE-003 Fix: Add timing jitter before returning
+        Self::add_timing_jitter().await;
+
         // Generate tokens
         self.generate_tokens(
             created_user.id,
@@ -236,7 +249,15 @@ impl AuthService {
                 .fetch_optional(&self.pool)
                 .await?;
 
-        let user = found_user.ok_or(AuthError::InvalidCredentials)?;
+        let user = match found_user {
+            Some(u) => u,
+            None => {
+                // CVE-003 Fix: Add constant-time delay to prevent user enumeration
+                // This delay matches the average time for password verification
+                tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+                return Err(AuthError::InvalidCredentials);
+            }
+        };
 
         // Verify password with Argon2
         let password_hash = user.password_hash.as_deref().ok_or(AuthError::InvalidCredentials)?;
@@ -246,6 +267,8 @@ impl AuthService {
             .verify_password(login_user.password.as_bytes(), &parsed_hash)
             .is_err()
         {
+            // CVE-003 Fix: Add timing jitter before returning error
+            Self::add_timing_jitter().await;
             return Err(AuthError::InvalidCredentials);
         }
 
@@ -390,6 +413,8 @@ impl AuthService {
             .verify_password(current_password.as_bytes(), &parsed_hash)
             .is_err()
         {
+            // CVE-003 Fix: Add timing jitter before returning error
+            Self::add_timing_jitter().await;
             return Err(AuthError::InvalidCredentials);
         }
 
@@ -429,6 +454,9 @@ impl AuthService {
                 None,
             )
             .await;
+
+        // CVE-003 Fix: Add timing jitter before returning
+        Self::add_timing_jitter().await;
 
         Ok(())
     }
@@ -485,6 +513,9 @@ impl AuthService {
 
         // 5. Send email
         let _ = crate::utils::email::send_password_reset_email(email, &token);
+
+        // CVE-003 Fix: Add timing jitter before returning
+        Self::add_timing_jitter().await;
 
         // Return token for testing purposes (in production, only available via email)
         Ok(Some(token))

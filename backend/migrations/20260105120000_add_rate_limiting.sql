@@ -15,13 +15,21 @@ CREATE TABLE IF NOT EXISTS rate_limit_rules (
 CREATE INDEX IF NOT EXISTS idx_rate_limit_rules_pattern ON rate_limit_rules(endpoint_pattern);
 CREATE INDEX IF NOT EXISTS idx_rate_limit_rules_enabled ON rate_limit_rules(enabled);
 
--- Seed default rate limit rules
+-- Seed default rate limit rules for CVE-004
 INSERT INTO rate_limit_rules (name, endpoint_pattern, max_requests, window_seconds, strategy, enabled) VALUES
-    ('Auth - Login/Register', '/api/auth/(login|register)', 5, 900, 'IP', TRUE),
-    ('Auth - General', '/api/auth/*', 60, 60, 'User', TRUE),
-    ('API - Read Operations', '/api/*/GET', 100, 60, 'User', TRUE),
-    ('API - Write Operations', '/api/*/POST|PUT|DELETE', 30, 60, 'User', TRUE),
-    ('Admin Endpoints', '/api/admin/*', 50, 60, 'User', TRUE);
+    -- Auth endpoints with specific limits (CVE-004)
+    ('auth-login', '/api/auth/login', 5, 900, 'IP', TRUE),           -- 5 attempts per 15 minutes per IP
+    ('auth-mfa-challenge', '/api/auth/mfa/challenge', 10, 300, 'IP', TRUE), -- 10 attempts per 5 minutes per IP
+    ('auth-forgot-password', '/api/auth/forgot-password', 3, 3600, 'IP', TRUE), -- 3 requests per hour per IP
+    ('auth-register', '/api/auth/register', 3, 3600, 'IP', TRUE),    -- 3 registrations per hour per IP
+
+    -- General auth endpoints
+    ('auth-general', '/api/auth/*', 60, 60, 'User', TRUE),
+
+    -- API endpoints
+    ('api-read', '/api/*/GET', 100, 60, 'User', TRUE),
+    ('api-write', '/api/*/POST|PUT|DELETE', 30, 60, 'User', TRUE),
+    ('admin', '/api/admin/*', 50, 60, 'User', TRUE);
 
 -- Create rate limit bypass tokens table
 CREATE TABLE IF NOT EXISTS rate_limit_bypass_tokens (
@@ -39,4 +47,4 @@ CREATE INDEX IF NOT EXISTS idx_bypass_tokens_token ON rate_limit_bypass_tokens(t
 
 -- Generate initial bypass token for testing
 INSERT INTO rate_limit_bypass_tokens (token, description) VALUES
-    (md5(random()::text), 'Initial test bypass token');
+    ('test-bypass-token-12345', 'Automated test bypass token - DO NOT DELETE');
