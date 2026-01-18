@@ -27,7 +27,7 @@ services:
     build:
       context: ./database
     ports:
-      - "5301:5432"
+      - "5301:5432"  # Expose for tests (TODO: restrict in production)
     environment:
       - POSTGRES_USER=app
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
@@ -36,6 +36,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - data_net  # ONLY on data network (isolated, no internet access)
+      - backend_net  # Also on backend network for service communication
     secrets:
       - db_password
 

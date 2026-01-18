@@ -412,7 +412,8 @@ async fn test_register_duplicate_email_fails(pool: PgPool) {
         .await;
 
     assert!(result.is_err());
-    assert_eq!(result.unwrap_err().to_string(), "User already exists");
+    // CVE-003 Fix: Generic error message to prevent user enumeration
+    assert_eq!(result.unwrap_err().to_string(), "Validation error: Invalid registration data");
 }
 
 #[sqlx::test]
