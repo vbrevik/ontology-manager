@@ -13,6 +13,7 @@ import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as MonitoringRouteImport } from './routes/monitoring'
 import { Route as MfaChallengeRouteImport } from './routes/mfa-challenge'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
@@ -77,6 +78,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonitoringRoute = MonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MfaChallengeRoute = MfaChallengeRouteImport.update({
@@ -315,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/mfa-challenge': typeof MfaChallengeRoute
+  '/monitoring': typeof MonitoringRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
@@ -365,6 +372,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/mfa-challenge': typeof MfaChallengeRoute
+  '/monitoring': typeof MonitoringRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
@@ -414,6 +422,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
   '/mfa-challenge': typeof MfaChallengeRoute
+  '/monitoring': typeof MonitoringRoute
   '/profile': typeof ProfileRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
@@ -467,6 +476,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logs'
     | '/mfa-challenge'
+    | '/monitoring'
     | '/profile'
     | '/projects'
     | '/register'
@@ -517,6 +527,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logs'
     | '/mfa-challenge'
+    | '/monitoring'
     | '/profile'
     | '/register'
     | '/reports'
@@ -565,6 +576,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/logs'
     | '/mfa-challenge'
+    | '/monitoring'
     | '/profile'
     | '/projects'
     | '/register'
@@ -617,6 +629,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
   MfaChallengeRoute: typeof MfaChallengeRoute
+  MonitoringRoute: typeof MonitoringRoute
   ProfileRoute: typeof ProfileRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RegisterRoute: typeof RegisterRoute
@@ -655,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monitoring': {
+      id: '/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof MonitoringRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mfa-challenge': {
@@ -1098,6 +1118,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
   MfaChallengeRoute: MfaChallengeRoute,
+  MonitoringRoute: MonitoringRoute,
   ProfileRoute: ProfileRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RegisterRoute: RegisterRoute,
