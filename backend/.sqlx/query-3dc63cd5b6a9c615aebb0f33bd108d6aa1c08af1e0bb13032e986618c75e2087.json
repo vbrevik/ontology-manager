@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT COUNT(DISTINCT ip_address)\n            FROM failed_auth_attempts\n            WHERE attempted_at > NOW() - INTERVAL '1 hour'\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3dc63cd5b6a9c615aebb0f33bd108d6aa1c08af1e0bb13032e986618c75e2087"
+}

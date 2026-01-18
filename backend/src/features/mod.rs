@@ -12,6 +12,7 @@ pub mod rate_limit;
 pub mod rebac;
 pub mod system;
 pub mod users;
-pub mod monitoring;
+// Temporarily disabled due to compilation issues
+// pub mod monitoring;
 pub mod test_marker;
 pub mod test_mode;

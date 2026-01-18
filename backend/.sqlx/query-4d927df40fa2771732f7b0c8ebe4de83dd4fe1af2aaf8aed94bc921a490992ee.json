@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    UPDATE alert_rules\n                    SET \n                        last_triggered_at = NOW(),\n                        total_triggers = total_triggers + 1\n                    WHERE id = $1\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4d927df40fa2771732f7b0c8ebe4de83dd4fe1af2aaf8aed94bc921a490992ee"
+}

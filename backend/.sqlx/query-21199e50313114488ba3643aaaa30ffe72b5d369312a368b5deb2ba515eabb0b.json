@@ -1,0 +1,82 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                user_id as \"user_id!\",\n                username,\n                email,\n                total_events as \"total_events!\",\n                failed_auths as \"failed_auths!\",\n                session_events as \"session_events!\",\n                api_requests as \"api_requests!\",\n                data_accesses as \"data_accesses!\",\n                critical_events as \"critical_events!\",\n                first_event as \"first_event!\",\n                last_event as \"last_event!\"\n            FROM monitoring_user_activity_summary\n            ORDER BY total_events DESC\n            LIMIT $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "username",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "total_events!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "failed_auths!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "session_events!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "api_requests!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "data_accesses!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "critical_events!",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 9,
+        "name": "first_event!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "last_event!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "21199e50313114488ba3643aaaa30ffe72b5d369312a368b5deb2ba515eabb0b"
+}

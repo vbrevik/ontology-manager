@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                ip_address,\n                attempt_count,\n                unique_identifiers,\n                endpoints_attempted,\n                first_attempt,\n                last_attempt,\n                duration_minutes\n            FROM recent_failed_auth_by_ip\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "ip_address",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 1,
+        "name": "attempt_count",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "unique_identifiers",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "endpoints_attempted",
+        "type_info": "VarcharArray"
+      },
+      {
+        "ordinal": 4,
+        "name": "first_attempt",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "last_attempt",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "duration_minutes",
+        "type_info": "Numeric"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "86eb79fff66563fbb54ecfa5ea9ef4364c08b08cb69a3c076c3251c46f0c453f"
+}

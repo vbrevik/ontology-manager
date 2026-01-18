@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT EXISTS(\n                -- User has direct permission\n                SELECT 1 FROM relationships user_perm\n                JOIN entities perm ON perm.id = user_perm.target_entity_id\n                JOIN classes pc ON pc.id = perm.class_id\n                WHERE user_perm.source_entity_id = $1\n                  AND pc.name = 'Permission'\n                  AND perm.attributes->>'name' = $2\n                  AND user_perm.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_permission' LIMIT 1)\n                \n                UNION ALL\n                \n                -- User has permission via role\n                SELECT 1 FROM relationships user_role\n                JOIN entities role ON role.id = user_role.target_entity_id\n                JOIN classes rc ON rc.id = role.class_id\n                JOIN relationships role_perm ON role_perm.source_entity_id = role.id\n                JOIN entities perm ON perm.id = role_perm.target_entity_id\n                JOIN classes pc ON pc.id = perm.class_id\n                WHERE user_role.source_entity_id = $1\n                  AND rc.name = 'Role'\n                  AND user_role.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_role' LIMIT 1)\n                  AND pc.name = 'Permission'\n                  AND perm.attributes->>'name' = $2\n                  AND role_perm.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission' LIMIT 1)\n                \n                UNION ALL\n                \n                -- User is superadmin (has all permissions)\n                SELECT 1 FROM relationships user_role\n                JOIN entities role ON role.id = user_role.target_entity_id\n                JOIN classes rc ON rc.id = role.class_id\n                WHERE user_role.source_entity_id = $1\n                  AND rc.name = 'Role'\n                  AND role.attributes->>'name' = 'superadmin'\n                  AND user_role.relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'has_role' LIMIT 1)\n            ) as \"exists!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "a51d42958d2f2d9f3e2d4e744b42439f0bc2f43867c0818bd6b802cecd067235"
+}

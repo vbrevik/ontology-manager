@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT EXISTS(\n                SELECT 1 FROM relationships r\n                JOIN entities role ON role.id = r.target_entity_id\n                JOIN classes c ON c.id = role.class_id\n                WHERE r.source_entity_id = $1\n                  AND c.name = 'Role'\n                  AND (role.attributes->>'name' = 'superadmin' OR role.attributes->>'name' = 'admin')\n            ) as \"exists!\"\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "exists!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "404c5d0aca3d36957c87db94a1c5d59643e61348c32a75775de4f54bdcd4e9c4"
+}

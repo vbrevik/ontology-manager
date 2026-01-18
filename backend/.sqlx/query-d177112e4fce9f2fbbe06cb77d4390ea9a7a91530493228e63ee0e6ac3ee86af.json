@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                date_trunc('hour', occurred_at) + \n                (EXTRACT(MINUTE FROM occurred_at)::int / $1) * ($1 || ' minutes')::interval as bucket,\n                COUNT(*) as count\n            FROM monitoring_events_timeline\n            WHERE event_class = $2\n              AND occurred_at > NOW() - ($3 || ' hours')::INTERVAL\n            GROUP BY bucket\n            ORDER BY bucket ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "bucket",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "d177112e4fce9f2fbbe06cb77d4390ea9a7a91530493228e63ee0e6ac3ee86af"
+}

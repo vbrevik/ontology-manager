@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                event_class,\n                COUNT(*) as count\n            FROM monitoring_events_timeline\n            WHERE occurred_at > NOW() - ($1 || ' hours')::INTERVAL\n            GROUP BY event_class\n            ORDER BY count DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "event_class",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      null
+    ]
+  },
+  "hash": "7e950913b34800aaaf84f97fab156c5157f7105e4262481acc1d26c687c7c8c8"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    UPDATE entities\n                    SET attributes = jsonb_set(\n                        jsonb_set(\n                            attributes,\n                            '{last_triggered_at}',\n                            to_jsonb(NOW())\n                        ),\n                        '{total_triggers}',\n                        to_jsonb((COALESCE((attributes->>'total_triggers')::INTEGER, 0) + 1)::INTEGER)\n                    ),\n                    updated_at = NOW()\n                    WHERE id = $1\n                    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "54b3d4ffd7eaa9dc72bcbba7cdf1703fe157ae1f3c91accf39f3c6880d06fe53"
+}

@@ -1,0 +1,112 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                id,\n                event_type,\n                severity as \"severity!: Severity\",\n                user_id,\n                ip_address,\n                user_agent,\n                resource,\n                action,\n                outcome as \"outcome!: Outcome\",\n                details,\n                request_id,\n                session_id,\n                detected_at,\n                alerted,\n                alerted_at,\n                created_at\n            FROM security_events\n            ORDER BY detected_at DESC\n            LIMIT $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "event_type",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "severity!: Severity",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "ip_address",
+        "type_info": "Inet"
+      },
+      {
+        "ordinal": 5,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "resource",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "action",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "outcome!: Outcome",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "details",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 10,
+        "name": "request_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 11,
+        "name": "session_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 12,
+        "name": "detected_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 13,
+        "name": "alerted",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "alerted_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 15,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "cc1366c7f4545c5fd541805bcda1a2310b84fb96139d3a554369d7babb7064a0"
+}

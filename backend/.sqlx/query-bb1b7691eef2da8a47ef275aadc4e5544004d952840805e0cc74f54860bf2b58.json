@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                e.id,\n                e.display_name,\n                e.attributes,\n                e.created_at,\n                e.updated_at\n            FROM entities e\n            JOIN classes c ON e.class_id = c.id\n            WHERE c.name = 'AlertRule'\n              AND e.deleted_at IS NULL\n            ORDER BY (e.attributes->>'total_triggers')::INTEGER DESC NULLS LAST\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "attributes",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "bb1b7691eef2da8a47ef275aadc4e5544004d952840805e0cc74f54860bf2b58"
+}

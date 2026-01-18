@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                id,\n                attributes,\n                occurred_at\n            FROM monitoring_events_timeline\n            WHERE event_class = 'APIRequestEvent'\n              AND (attributes->>'response_time_ms')::INTEGER > 1000\n              AND occurred_at > NOW() - ($1 || ' hours')::INTERVAL\n            ORDER BY (attributes->>'response_time_ms')::INTEGER DESC\n            LIMIT 10\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "attributes",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 2,
+        "name": "occurred_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "f1531257f74003728d0681878f21545439cece1dff38b7fb50263f9890647391"
+}

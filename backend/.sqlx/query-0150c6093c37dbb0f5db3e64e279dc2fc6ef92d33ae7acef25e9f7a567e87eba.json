@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                    SELECT \n                        e.id,\n                        e.display_name as rule_name,\n                        e.attributes\n                    FROM entities e\n                    JOIN classes c ON e.class_id = c.id\n                    WHERE c.name = 'AlertRule'\n                      AND e.id = $1\n                    ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "rule_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "attributes",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0150c6093c37dbb0f5db3e64e279dc2fc6ef92d33ae7acef25e9f7a567e87eba"
+}
