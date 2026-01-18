@@ -25,7 +25,7 @@ export interface AuthResponse {
   expires_in?: number;
   mfa_required?: boolean;
   mfa_token?: string;
-  user_id: string; // added
+  user_id?: string;
 }
 
 export interface Session {
@@ -76,7 +76,7 @@ export async function getUserInfo(): Promise<AuthUser | null> {
 }
 
 // Login function
-export async function login(identifier: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string }> {
+export async function login(identifier: string, password: string, rememberMe: boolean = false): Promise<{ success: boolean; error?: string; mfaRequired?: boolean; userId?: string; mfaToken?: string }> {
   try {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
@@ -91,7 +91,12 @@ export async function login(identifier: string, password: string, rememberMe: bo
     if (response.status === 202) {
       // MFA Required
       const data: AuthResponse = await response.json();
-      return { success: true, mfaRequired: true, userId: data.user_id };
+      return { 
+        success: true, 
+        mfaRequired: true, 
+        userId: data.user_id, 
+        mfaToken: data.mfa_token 
+      };
     }
 
     if (!response.ok) {

@@ -45,7 +45,7 @@ async fn test_register_and_login_flow(pool: PgPool) {
 
     // 3. Verify User exists in DB
     use sqlx::Row;
-    let row = sqlx::query("SELECT username FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT username FROM unified_users WHERE email = $1")
         .bind(email)
         .fetch_one(&pool) // Using the pool directly
         .await
@@ -162,7 +162,7 @@ async fn test_notification_flow(pool: PgPool) {
 
     // Get User ID
     use sqlx::Row;
-    let user_row = sqlx::query("SELECT id FROM users WHERE email = $1")
+    let user_row = sqlx::query("SELECT id FROM unified_users WHERE email = $1")
         .bind(email)
         .fetch_one(&pool)
         .await

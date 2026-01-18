@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, name FROM classes \n            WHERE name IN ('SecurityEvent', 'User') \n            AND version_id = (SELECT id FROM ontology_versions WHERE is_system = TRUE LIMIT 1)\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "76c4dd36a2b4a205307944a1d5c32f94802105232ef0abf21813daf7b5494bba"
+}

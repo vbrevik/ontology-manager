@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT backup_codes, mfa_enabled FROM unified_users WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "backup_codes",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 1,
+        "name": "mfa_enabled",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "7602d5069d0107a7e8b2ababcfbb4f2fcbe302b82192aa967deab563e784e155"
+}

@@ -3,7 +3,7 @@ use crate::features::auth::{AuthResponse, AuthService, LoginUser, RegisterUser, 
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    response::sse::{Event, Sse},
+    response::{sse::{Event, Sse}, IntoResponse},
     routing::{delete, get, post},
     Extension, Json, Router,
 };
@@ -19,12 +19,12 @@ use crate::middleware::csrf::{set_csrf_cookie, CSRF_COOKIE_NAME};
 const ACCESS_TOKEN_COOKIE: &str = "access_token";
 const REFRESH_TOKEN_COOKIE: &str = "refresh_token";
 
-fn set_auth_cookies(cookies: &Cookies, auth: &AuthResponse) {
+pub(crate) fn set_auth_cookies(cookies: &Cookies, auth: &AuthResponse) {
     if let Some(access_token) = &auth.access_token {
         let access_cookie = Cookie::build((ACCESS_TOKEN_COOKIE, access_token.clone()))
             .http_only(true)
             .path("/")
-            .secure(false) // Explicitly allow insecure for localhost
+            .secure(cfg!(not(debug_assertions))) // CVE-002 Fix: Secure in production, allow HTTP in debug
             .max_age(tower_cookies::cookie::time::Duration::seconds(
                 auth.expires_in.unwrap_or(3600),
             ))
@@ -37,7 +37,7 @@ fn set_auth_cookies(cookies: &Cookies, auth: &AuthResponse) {
         let mut refresh_builder = Cookie::build((REFRESH_TOKEN_COOKIE, refresh_token.clone()))
             .http_only(true)
             .path("/")
-            .secure(false)
+            .secure(cfg!(not(debug_assertions))) // CVE-002 Fix: Secure in production, allow HTTP in debug
             .same_site(tower_cookies::cookie::SameSite::Lax);
 
         if auth.remember_me {
@@ -75,8 +75,9 @@ pub fn public_auth_routes() -> Router<AuthService> {
         .route("/refresh", post(refresh_token_handler))
         .route("/forgot-password", post(forgot_password_handler))
         .route("/reset-password", post(reset_password_handler))
+        .route("/mfa/challenge", post(mfa_challenge_handler))
         .route("/verify-reset-token/:token", get(verify_reset_token_handler))
-        .route("/test/grant-role", post(grant_role_handler))
+        // CVE-005 Fix: Test endpoints removed for security
 }
 
 pub fn protected_auth_routes() -> Router<AuthService> {
@@ -102,7 +103,7 @@ pub fn protected_auth_routes() -> Router<AuthService> {
         .route("/user", get(user_handler))
         .route("/profile", axum::routing::put(profile_update_handler))
         .route("/debug", get(debug_handler))
-        .route("/test/cleanup", post(cleanup_handler))
+        // CVE-005 Fix: Test cleanup endpoint removed
 }
 
 #[axum::debug_handler]
@@ -247,6 +248,13 @@ pub struct ForgotPasswordRequest {
     pub email: String,
 }
 
+#[derive(Deserialize)]
+pub struct MfaChallengeRequest {
+    pub mfa_token: String,
+    pub code: String,
+    pub remember_me: Option<bool>,
+}
+
 #[derive(Deserialize, Validate)]
 pub struct ResetPasswordRequest {
     pub token: String,
@@ -297,6 +305,21 @@ async fn reset_password_handler(
 }
 
 #[axum::debug_handler]
+async fn mfa_challenge_handler(
+    State(auth_service): State<AuthService>,
+    cookies: Cookies,
+    Json(req): Json<MfaChallengeRequest>,
+) -> Result<impl IntoResponse, AuthError> {
+    // This handler processes MFA code submission after login
+    auth_service.verify_mfa_and_login(
+        req.mfa_token,
+        req.code,
+        req.remember_me,
+        cookies
+    ).await
+}
+
+#[axum::debug_handler]
 async fn notifications_handler(
     State(auth_service): State<AuthService>,
     axum::extract::Query(query): axum::extract::Query<std::collections::HashMap<String, String>>,
@@ -329,52 +352,8 @@ pub struct RefreshTokenRequest {
     pub refresh_token: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CleanupRequest {
-    pub prefix: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GrantRoleRequest {
-    pub email: String,
-    pub role_name: String,
-}
-
-#[axum::debug_handler]
-async fn cleanup_handler(
-    State(auth_service): State<AuthService>,
-    Json(req): Json<CleanupRequest>,
-) -> Result<&'static str, AuthError> {
-    // Only allow when test endpoints are enabled
-    if std::env::var("ENABLE_TEST_ENDPOINTS").unwrap_or_default() != "true" {
-        return Err(AuthError::ValidationError(
-            "test endpoints disabled".to_string(),
-        ));
-    }
-
-    let prefix = req.prefix.unwrap_or_else(|| "e2e_user_".to_string());
-    auth_service
-        .delete_users_by_prefix(&prefix)
-        .await
-        .map(|_| "OK")
-}
-
-#[axum::debug_handler]
-async fn grant_role_handler(
-    State(auth_service): State<AuthService>,
-    Json(req): Json<GrantRoleRequest>,
-) -> Result<Json<serde_json::Value>, AuthError> {
-    if std::env::var("ENABLE_TEST_ENDPOINTS").unwrap_or_default() != "true" {
-        return Err(AuthError::ValidationError(
-            "test endpoints disabled".to_string(),
-        ));
-    }
-
-    auth_service
-        .grant_role_for_test(&req.email, &req.role_name)
-        .await?;
-    Ok(Json(serde_json::json!({ "ok": true })))
-}
+// CVE-005 Fix: Test endpoints and their handlers removed for security
+// If test utilities are needed, use test-only modules or feature flags instead
 
 #[axum::debug_handler]
 async fn logout_handler(
@@ -438,9 +417,13 @@ async fn list_sessions_handler(
 
 async fn list_all_sessions_handler(
     State(auth_service): State<AuthService>,
-    Extension(_claims): Extension<crate::features::auth::jwt::Claims>,
+    Extension(claims): Extension<crate::features::auth::jwt::Claims>,
 ) -> Result<Json<Vec<crate::features::auth::models::AdminSessionResponse>>, AuthError> {
-    // In a real system, we'd check for 'superadmin' role here via claims or middleware
+    // CVE-001 Fix: Check for superadmin role
+    if !claims.roles.iter().any(|r| r.role_name == "superadmin") {
+        return Err(AuthError::PermissionDenied);
+    }
+    
     let sessions = auth_service.list_all_sessions(100).await?;
     Ok(Json(sessions))
 }
@@ -460,7 +443,11 @@ async fn revoke_any_session_handler(
     Extension(claims): Extension<crate::features::auth::jwt::Claims>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AuthError> {
-    // In a real system, we'd check for 'superadmin' role here
+    // CVE-001 Fix: Check for superadmin role
+    if !claims.roles.iter().any(|r| r.role_name == "superadmin") {
+        return Err(AuthError::PermissionDenied);
+    }
+    
     let admin_id = uuid::Uuid::parse_str(&claims.sub).map_err(|_| AuthError::UserNotFound)?;
     auth_service.revoke_any_session(&id, admin_id).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -468,9 +455,13 @@ async fn revoke_any_session_handler(
 
 async fn get_audit_logs_handler(
     State(auth_service): State<AuthService>,
-    Extension(_claims): Extension<crate::features::auth::jwt::Claims>,
+    Extension(claims): Extension<crate::features::auth::jwt::Claims>,
 ) -> Result<Json<Vec<crate::features::auth::models::AuditLog>>, AuthError> {
-    // In a real system, we'd check for 'superadmin' role here
+    // CVE-001 Fix: Check for superadmin role
+    if !claims.roles.iter().any(|r| r.role_name == "superadmin") {
+        return Err(AuthError::PermissionDenied);
+    }
+    
     let logs = auth_service.audit_service.get_logs().await?;
     Ok(Json(logs))
 }
@@ -677,7 +668,7 @@ async fn mfa_verify_handler(
     let response = state.auth_service.generate_tokens(
         user.id,
         user.username,
-        user.email,
+        user.email.clone().unwrap_or_default(),
         user.tenant_id,
         req.remember_me.unwrap_or(false),
         Some(ip),

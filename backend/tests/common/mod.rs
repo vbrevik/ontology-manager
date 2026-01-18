@@ -21,6 +21,7 @@ pub struct TestServices {
     pub ai_service: AiService,
     pub system_service: SystemService,
     pub mfa_service: template_repo_backend::features::auth::mfa::MfaService,
+    pub project_service: template_repo_backend::features::projects::ProjectService,
 }
 
 pub async fn setup_services(pool: PgPool) -> TestServices {
@@ -91,6 +92,13 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
     // System Service
     let system_service = SystemService::new(pool.clone(), audit_service.clone());
 
+    // Project Service
+    let project_service = template_repo_backend::features::projects::ProjectService::new(
+        pool.clone(),
+        ontology_service.clone(),
+        rebac_service.clone(),
+    );
+
     TestServices {
         auth_service,
         user_service,
@@ -104,6 +112,7 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         ai_service,
         system_service,
         mfa_service,
+        project_service,
     }
 }
 

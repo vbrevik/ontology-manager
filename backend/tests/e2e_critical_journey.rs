@@ -34,7 +34,7 @@ async fn test_secure_project_management_lifecycle(pool: PgPool) {
 
     // Fetch user fetching ID (AuthResponse doesn't include ID)
     use sqlx::Row;
-    let admin_user_row = sqlx::query("SELECT id FROM users WHERE email = $1")
+    let admin_user_row = sqlx::query("SELECT id FROM unified_users WHERE email = $1")
         .bind(email)
         .fetch_one(&pool)
         .await

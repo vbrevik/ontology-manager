@@ -55,19 +55,34 @@ pub enum AuthError {
     #[error("User not found")]
     UserNotFound,
 
+    #[error("Invalid MFA code")]
+    InvalidMfaCode,
+
+    #[error("Invalid token")]
+    InvalidToken,
+
+    #[error("Permission denied")]
+    PermissionDenied,
+
     #[error("ABAC error: {0}")]
     AbacError(#[from] crate::features::abac::service::AbacError),
 }
 
 impl AuthError {
-    pub fn to_status_code(&self) -> StatusCode {
+    pub     fn to_status_code(&self) -> StatusCode {
         match self {
             Self::UserExists => StatusCode::CONFLICT,
             Self::InvalidCredentials => StatusCode::UNAUTHORIZED,
             Self::InvalidRefreshToken => StatusCode::UNAUTHORIZED,
+            Self::InvalidMfaCode => StatusCode::UNAUTHORIZED,
+            Self::InvalidToken => StatusCode::UNAUTHORIZED,
             Self::UserNotFound => StatusCode::NOT_FOUND,
+            Self::PermissionDenied => StatusCode::FORBIDDEN,
             Self::ValidationError(_) => StatusCode::BAD_REQUEST,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::DatabaseError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::JwtError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::PasswordHashError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::AbacError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
@@ -115,6 +130,7 @@ impl AuthService {
         &self.abac_service
     }
 
+    #[allow(dead_code)]
     const USER_ENTITY_QUERY: &'static str = "SELECT * FROM unified_users WHERE 1=1";
 
     /// Fetch user roles from ABAC and convert to claims format
@@ -190,7 +206,7 @@ impl AuthService {
         self.generate_tokens(
             created_user.id,
             created_user.username,
-            created_user.email,
+            created_user.email.clone().unwrap_or_default(),
             created_user.tenant_id,
             false,
             None,
@@ -234,7 +250,7 @@ impl AuthService {
              let mfa_token = create_jwt(
                 &user.id.to_string(),
                 &user.username,
-                &user.email,
+                user.email.as_deref().unwrap_or(""),
                 vec![],
                 vec!["mfa_pending".to_string()], // Permission flag
                 &self.config
@@ -328,7 +344,7 @@ impl AuthService {
             .generate_tokens(
                 user.id,
                 user.username,
-                user.email,
+                user.email.clone().unwrap_or_default(),
                 user.tenant_id,
                 login_user.remember_me.unwrap_or(false),
                 ip,
@@ -409,7 +425,7 @@ impl AuthService {
     }
 
     /// Request a password reset for the given email.
-    pub async fn request_password_reset(&self, email: &str) -> Result<(), AuthError> {
+    pub async fn request_password_reset(&self, email: &str) -> Result<Option<String>, AuthError> {
         // 1. Check if user exists
         let user_opt = sqlx::query_as::<_, User>("SELECT * FROM unified_users WHERE email = $1")
             .bind(email)
@@ -420,8 +436,8 @@ impl AuthService {
             Some(u) => u,
             None => {
                 // Determine if we should delay to match timing? 
-                // For now, just return OK.
-                return Ok(());
+                // For now, just return OK with None (no user enumeration).
+                return Ok(None);
             }
         };
 
@@ -460,7 +476,8 @@ impl AuthService {
         // 5. Send email
         let _ = crate::utils::email::send_password_reset_email(email, &token);
 
-        Ok(())
+        // Return token for testing purposes (in production, only available via email)
+        Ok(Some(token))
     }
 
     /// Verify a reset token only (doesn't consume it).
@@ -549,6 +566,62 @@ impl AuthService {
         self.create_notification(&user_id.to_string(), "Your password has been successfully reset.").await?;
 
         Ok(())
+    }
+
+    /// Verify MFA code and complete login
+    pub async fn verify_mfa_and_login(
+        &self,
+        mfa_token: String,
+        code: String,
+        remember_me: Option<bool>,
+        cookies: tower_cookies::Cookies,
+    ) -> Result<axum::Json<AuthResponse>, AuthError> {
+        // 1. Verify the MFA token
+        let claims = crate::features::auth::jwt::validate_jwt(&mfa_token, &self.config)
+            .map_err(|_| AuthError::InvalidToken)?;
+        
+        // 2. Check it's an MFA pending token
+        if !claims.permissions.contains(&"mfa_pending".to_string()) {
+            return Err(AuthError::InvalidToken);
+        }
+        
+        let user_id = Uuid::parse_str(&claims.sub)
+            .map_err(|_| AuthError::InvalidToken)?;
+        
+        // 3. Verify MFA code (TOTP or backup)
+        let verification_ok = if self.mfa_service.verify_code(user_id, &code).await.is_ok() {
+            true
+        } else {
+            self.mfa_service.verify_backup_code(user_id, &code).await.is_ok()
+        };
+        
+        if !verification_ok {
+            return Err(AuthError::InvalidMfaCode);
+        }
+        
+        // 4. Fetch user
+        let user = sqlx::query_as::<_, User>("SELECT * FROM unified_users WHERE id = $1")
+            .bind(user_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or(AuthError::UserNotFound)?;
+        
+        // 5. Generate real tokens using existing helper
+        let remember_me_flag = remember_me.unwrap_or(false);
+        let auth_response = self.generate_tokens(
+            user.id,
+            user.username.clone(),
+            user.email.clone().unwrap_or_default(),
+            user.tenant_id,
+            remember_me_flag,
+            None, // No IP tracking for MFA challenge
+            None, // No user agent tracking for MFA challenge
+        ).await?;
+        
+        // 6. Set cookies
+        crate::features::auth::routes::set_auth_cookies(&cookies, &auth_response);
+        
+        Ok(axum::Json(auth_response))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -676,7 +749,7 @@ impl AuthService {
         self.generate_tokens(
             user.id,
             user.username,
-            user.email,
+            user.email.clone().unwrap_or_default(),
             user.tenant_id,
             true,
             None,
@@ -1047,6 +1120,9 @@ impl IntoResponse for AuthError {
             AuthError::ValidationError(_) => StatusCode::BAD_REQUEST,
             AuthError::InvalidRefreshToken => StatusCode::UNAUTHORIZED,
             AuthError::UserNotFound => StatusCode::NOT_FOUND,
+            AuthError::InvalidMfaCode => StatusCode::UNAUTHORIZED,
+            AuthError::InvalidToken => StatusCode::UNAUTHORIZED,
+            AuthError::PermissionDenied => StatusCode::FORBIDDEN,
             AuthError::AbacError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 

@@ -47,7 +47,7 @@ impl DashboardService {
             .map(|u| ActivityEntry {
                 id: u.id.to_string(),
                 username: u.username,
-                email: u.email,
+                email: u.email.unwrap_or_default(),
                 created_at: u.created_at.to_rfc3339(),
             })
             .collect())

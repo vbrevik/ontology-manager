@@ -143,6 +143,11 @@ async fn main() {
         audit_service.clone(),
         ontology_service.clone(),
     );
+    let project_service = features::projects::ProjectService::new(
+        pool.clone(),
+        ontology_service.clone(),
+        rebac_service.clone(),
+    );
 
     // MFA Service (Moved up)
     // let mfa_service = features::auth::mfa::MfaService::new(pool.clone(), "OntologyManager".to_string());
@@ -264,6 +269,13 @@ async fn main() {
             "/firefighter",
             features::firefighter::routes::firefighter_routes()
                 .with_state(firefighter_service)
+                .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
+        )
+        .nest(
+            "/projects",
+            features::projects::routes::project_routes()
+                .with_state(project_service)
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         );

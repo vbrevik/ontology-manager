@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 use template_repo_backend::features::auth::models::{LoginUser, RegisterUser};
 use uuid::Uuid;
 use totp_rs::{Algorithm, Secret, TOTP};
@@ -449,7 +449,7 @@ async fn test_login_with_username(pool: PgPool) {
 
     assert!(result.is_ok());
     let response = result.unwrap();
-    assert!(!response.access_token.is_empty());
+    assert!(!response.access_token.unwrap().is_empty());
 }
 
 #[sqlx::test]
@@ -836,16 +836,14 @@ async fn test_logout_blacklists_refresh_token(pool: PgPool) {
         .await
         .expect("Logout failed");
 
-    // Verify token is blacklisted (revoked_at not null)
-    let revoked_at: Option<chrono::DateTime<Utc>> = sqlx::query_scalar(
-        "SELECT revoked_at FROM refresh_tokens WHERE token_id = $1"
-    )
-    .bind(&refresh_token)
-    .fetch_one(&pool)
-    .await
-    .unwrap();
+    // Verify token can no longer be used to refresh
+    let refresh_result = services
+        .auth_service
+        .refresh_token(refresh_token.clone())
+        .await;
 
-    assert!(revoked_at.is_some());
+    // Should fail because token is blacklisted (soft-deleted)
+    assert!(refresh_result.is_err(), "Refresh should fail after logout");
 }
 
 #[sqlx::test]
@@ -921,6 +919,14 @@ async fn test_revoke_session(pool: PgPool) {
         .await
         .unwrap();
 
+    // Get baseline session count
+    let baseline_sessions = services
+        .auth_service
+        .list_active_sessions(user_id, None)
+        .await
+        .expect("Failed to list baseline sessions");
+    let baseline_count = baseline_sessions.len();
+
     // Create 2 sessions
     services
         .auth_service
@@ -957,9 +963,10 @@ async fn test_revoke_session(pool: PgPool) {
         .await
         .expect("Failed to list sessions");
 
-    assert_eq!(sessions.len(), 2);
+    assert_eq!(sessions.len(), baseline_count + 2, "Should have baseline + 2 new sessions");
     
-    let token_to_revoke = &sessions[1].id;
+    // Revoke the first newly created session (not any baseline session)
+    let token_to_revoke = &sessions[baseline_count].id;
 
     // Revoke one session
     services
@@ -975,7 +982,7 @@ async fn test_revoke_session(pool: PgPool) {
         .await
         .expect("Failed to list sessions");
 
-    assert_eq!(sessions_after.len(), 1);
+    assert_eq!(sessions_after.len(), baseline_count + 1, "Should have baseline + 1 remaining session");
 }
 
 #[sqlx::test]
@@ -1046,6 +1053,13 @@ async fn test_count_active_refresh_tokens(pool: PgPool) {
         .await
         .expect("Registration failed");
 
+    // Get baseline count (in case there are tokens from common setup)
+    let baseline_count = services
+        .auth_service
+        .count_active_refresh_tokens()
+        .await
+        .expect("Failed to get baseline count");
+
     // Login 3 times to create 3 refresh tokens
     for _ in 0..3 {
         services
@@ -1070,7 +1084,8 @@ async fn test_count_active_refresh_tokens(pool: PgPool) {
         .await
         .expect("Failed to count refresh tokens");
 
-    assert_eq!(count, 3);
+    // Should have baseline + 3 new tokens
+    assert_eq!(count, baseline_count + 3);
 }
 
 #[sqlx::test]
@@ -1185,7 +1200,7 @@ async fn test_create_notification_broadcast(pool: PgPool) {
     ).await;
 
     assert!(event.is_ok());
-    let notification_event = event.unwrap();
+    let notification_event = event.unwrap().expect("Failed to receive notification");
     assert_eq!(notification_event.user_id, user_id.to_string());
     assert!(notification_event.message.contains("Broadcast test"));
 }
@@ -1207,22 +1222,17 @@ async fn test_refresh_token_with_roles_and_permissions(pool: PgPool) {
         .await
         .expect("Registration failed");
 
-    // Assign role and permissions
+    // Assign role using ontology (user_roles table doesn't exist anymore)
+    // Use grant_role_for_test helper
+    services
+        .auth_service
+        .grant_role_for_test(email, "editor")
+        .await
+        .expect("Failed to grant role");
+        
     let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
         .bind(email)
         .fetch_one(&pool)
-        .await
-        .unwrap();
-
-    let role_id: Uuid = sqlx::query_scalar("SELECT id FROM roles WHERE name = 'editor'")
-        .fetch_one(&pool)
-        .await
-        .unwrap();
-
-    sqlx::query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)")
-        .bind(user_id)
-        .bind(role_id)
-        .execute(&pool)
         .await
         .unwrap();
 
@@ -1248,17 +1258,19 @@ async fn test_refresh_token_with_roles_and_permissions(pool: PgPool) {
     // which are verified in JWT tests
 }
 
+// ===== Tests for Previously Missing Methods =====
+
 #[sqlx::test]
-async fn test_create_notification_broadcast(pool: PgPool) {
+async fn test_get_notifications(pool: PgPool) {
     let services = common::setup_services(pool.clone()).await;
 
-    let email = "broadcast@example.com";
+    let email = "notifications@example.com";
     let password = "Password123!";
     
     services
         .auth_service
         .register(RegisterUser {
-            username: "broadcast_user".to_string(),
+            username: "notifications_user".to_string(),
             email: email.to_string(),
             password: password.to_string(),
         })
@@ -1267,85 +1279,244 @@ async fn test_create_notification_broadcast(pool: PgPool) {
 
     let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
         .bind(email)
+        .fetch_one(&pool)
         .await
         .unwrap();
 
-    // Subscribe to notifications
-    let mut rx = services.auth_service.subscribe_notifications();
+    // Create 3 notifications
+    for i in 1..=3 {
+        services
+            .auth_service
+            .create_notification(&user_id.to_string(), &format!("Test notification {}", i))
+            .await
+            .expect("Failed to create notification");
+    }
 
-    // Create notification
-    services
+    // Get notifications
+    let notifications = services
         .auth_service
-        .create_notification(&user_id.to_string(), "Broadcast test")
+        .get_notifications(&user_id.to_string())
         .await
-        .expect("Failed to create notification");
+        .expect("Failed to get notifications");
 
-    // Receive broadcast
-    let event = tokio::time::timeout(
-        tokio::time::Duration::from_millis(500),
-        rx.recv()
-    ).await;
-
-    assert!(event.is_ok());
-    let notification_event = event.unwrap();
-    assert_eq!(notification_event.user_id, user_id.to_string());
-    assert!(notification_event.message.contains("Broadcast test"));
+    assert_eq!(notifications.len(), 3, "Should have 3 notifications");
+    
+    // Verify ordering (newest first) - messages should be in reverse order
+    assert!(notifications[0].1.contains("notification 3"));
+    assert!(notifications[1].1.contains("notification 2"));
+    assert!(notifications[2].1.contains("notification 1"));
 }
 
 #[sqlx::test]
-async fn test_refresh_token_with_roles_and_permissions(pool: PgPool) {
+async fn test_get_notifications_empty(pool: PgPool) {
     let services = common::setup_services(pool.clone()).await;
 
-    let email = "roles_perm@example.com";
+    let email = "no_notifications@example.com";
     let password = "Password123!";
     
     services
         .auth_service
         .register(RegisterUser {
-            username: "roles_perm_user".to_string(),
+            username: "no_notif_user".to_string(),
             email: email.to_string(),
             password: password.to_string(),
         })
         .await
         .expect("Registration failed");
 
-    // Assign role and permissions
     let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
         .bind(email)
         .fetch_one(&pool)
         .await
         .unwrap();
 
-    let role_id: Uuid = sqlx::query_scalar("SELECT id FROM roles WHERE name = 'editor'")
+    // Get notifications for user with none
+    let notifications = services
+        .auth_service
+        .get_notifications(&user_id.to_string())
+        .await
+        .expect("Failed to get notifications");
+
+    assert_eq!(notifications.len(), 0, "Should have no notifications");
+}
+
+#[sqlx::test]
+async fn test_revoke_any_session_admin(pool: PgPool) {
+    let services = common::setup_services(pool.clone()).await;
+
+    // Create admin user
+    let admin_email = "admin@example.com";
+    services
+        .auth_service
+        .register(RegisterUser {
+            username: "admin_user".to_string(),
+            email: admin_email.to_string(),
+            password: "AdminPassword123!".to_string(),
+        })
+        .await
+        .expect("Admin registration failed");
+
+    let admin_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
+        .bind(admin_email)
         .fetch_one(&pool)
         .await
         .unwrap();
 
-    sqlx::query("INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)")
-        .bind(user_id)
-        .bind(role_id)
-        .execute(&pool)
+    // Create target user
+    let user_email = "target@example.com";
+    services
+        .auth_service
+        .register(RegisterUser {
+            username: "target_user".to_string(),
+            email: user_email.to_string(),
+            password: "Password123!".to_string(),
+        })
+        .await
+        .expect("User registration failed");
+
+    let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
+        .bind(user_email)
+        .fetch_one(&pool)
         .await
         .unwrap();
 
-    // Login to get tokens
-    let login_res = services
+    // User logs in
+    services
         .auth_service
         .login(
             LoginUser {
-                identifier: email.to_string(),
-                password: password.to_string(),
+                identifier: user_email.to_string(),
+                password: "Password123!".to_string(),
                 remember_me: None,
             },
             None,
             None,
         )
         .await
-        .expect("Login failed");
+        .expect("User login failed");
 
-    // Verify tokens contain roles and permissions
-    assert!(login_res.access_token.is_some());
-    assert!(!login_res.access_token.unwrap().is_empty());
-    // The actual roles/permissions would be in the JWT claims
-    // which are verified in JWT tests
+    // Get user's sessions
+    let sessions = services
+        .auth_service
+        .list_active_sessions(user_id, None)
+        .await
+        .expect("Failed to list sessions");
+
+    assert!(!sessions.is_empty(), "User should have at least one session");
+    let token_id = &sessions[sessions.len() - 1].id;
+
+    // Admin revokes user's session
+    let result = services
+        .auth_service
+        .revoke_any_session(token_id, admin_id)
+        .await;
+
+    assert!(result.is_ok(), "Admin should be able to revoke any session");
+
+    // Verify session is revoked
+    let sessions_after = services
+        .auth_service
+        .list_active_sessions(user_id, None)
+        .await
+        .expect("Failed to list sessions");
+
+    assert_eq!(sessions_after.len(), sessions.len() - 1, "Session should be revoked");
 }
+
+#[sqlx::test]
+async fn test_revoke_any_session_not_found(pool: PgPool) {
+    let services = common::setup_services(pool.clone()).await;
+
+    let admin_id = Uuid::new_v4();
+    let fake_token_id = "non_existent_token";
+
+    // Try to revoke non-existent session
+    let result = services
+        .auth_service
+        .revoke_any_session(fake_token_id, admin_id)
+        .await;
+
+    assert!(result.is_err(), "Should fail for non-existent session");
+}
+
+#[sqlx::test]
+async fn test_get_user_permissions(pool: PgPool) {
+    let services = common::setup_services(pool.clone()).await;
+
+    let email = "permissions@example.com";
+    let password = "Password123!";
+    
+    services
+        .auth_service
+        .register(RegisterUser {
+            username: "permissions_user".to_string(),
+            email: email.to_string(),
+            password: password.to_string(),
+        })
+        .await
+        .expect("Registration failed");
+
+    let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
+        .bind(email)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    // Grant role that has permissions
+    services
+        .auth_service
+        .grant_role_for_test(email, "editor")
+        .await
+        .expect("Failed to grant role");
+
+    // Get user permissions
+    let permissions = services
+        .auth_service
+        .get_user_permissions(&user_id.to_string())
+        .await
+        .expect("Failed to get permissions");
+
+    // User with editor role should have some permissions
+    assert!(!permissions.is_empty(), "Editor role should grant permissions");
+    
+    // Verify permissions are deduplicated (no duplicates)
+    let mut sorted = permissions.clone();
+    sorted.sort();
+    sorted.dedup();
+    assert_eq!(permissions.len(), sorted.len(), "Permissions should be deduplicated");
+}
+
+#[sqlx::test]
+async fn test_get_user_permissions_no_roles(pool: PgPool) {
+    let services = common::setup_services(pool.clone()).await;
+
+    let email = "no_perms@example.com";
+    let password = "Password123!";
+    
+    services
+        .auth_service
+        .register(RegisterUser {
+            username: "no_perms_user".to_string(),
+            email: email.to_string(),
+            password: password.to_string(),
+        })
+        .await
+        .expect("Registration failed");
+
+    let user_id: Uuid = sqlx::query_scalar("SELECT id FROM unified_users WHERE email = $1")
+        .bind(email)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    // Get permissions for user with no roles
+    let permissions = services
+        .auth_service
+        .get_user_permissions(&user_id.to_string())
+        .await
+        .expect("Failed to get permissions");
+
+    assert_eq!(permissions.len(), 0, "User with no roles should have no permissions");
+}
+
+

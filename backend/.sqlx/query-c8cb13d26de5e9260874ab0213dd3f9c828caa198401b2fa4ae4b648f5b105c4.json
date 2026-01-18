@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT mfa_secret, mfa_enabled, mfa_verified FROM unified_users WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "mfa_secret",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "mfa_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "mfa_verified",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c8cb13d26de5e9260874ab0213dd3f9c828caa198401b2fa4ae4b648f5b105c4"
+}

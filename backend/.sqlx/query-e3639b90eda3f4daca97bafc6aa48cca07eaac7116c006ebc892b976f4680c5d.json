@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT r.source_entity_id as user_id, r.target_entity_id as role_id, \n                   e_role.display_name as role_name,\n                   r.metadata->>'scope_entity_id' as scope_entity_id,\n                   r.metadata->>'valid_from' as valid_from,\n                   r.metadata->>'valid_until' as valid_until,\n                   r.metadata->>'schedule_cron' as schedule_cron,\n                   r.metadata->>'is_deny' as is_deny,\n                   r.created_at as granted_at\n            FROM relationships r\n            JOIN entities e_role ON r.target_entity_id = e_role.id\n            WHERE r.source_entity_id = ANY($1) \n              AND r.relationship_type_id = $2\n              AND (r.metadata->>'revoked_at' IS NULL)\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "role_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "role_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "scope_entity_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "valid_from",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "valid_until",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "schedule_cron",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "is_deny",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "granted_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      null,
+      null,
+      null,
+      null,
+      false
+    ]
+  },
+  "hash": "e3639b90eda3f4daca97bafc6aa48cca07eaac7116c006ebc892b976f4680c5d"
+}

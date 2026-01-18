@@ -4,6 +4,7 @@ import Dashboard from '@/features/dashboard/components/Dashboard'
 import { OnboardingGuide } from '@/components/OnboardingGuide'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
+import { MainSidebar } from '@/components/layout/MainSidebar'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -68,7 +69,14 @@ function App() {
 
   // If user is authenticated, show the dashboard (header/sidebar are handled by root layout)
   if (isAuthenticated) {
-    return <Dashboard />
+    return (
+      <div className="flex min-h-screen bg-background">
+        <MainSidebar />
+        <div className="flex-1 flex flex-col">
+          <Dashboard />
+        </div>
+      </div>
+    )
   }
 
   // Public landing page without header/sidebar

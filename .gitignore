@@ -7,3 +7,14 @@ coverage
 .idea
 .vscode
 *.log
+
+# Test artifacts
+cookies*.txt
+*_response.json
+*.jsonl
+audit_logs.json
+sessions_after.json
+revoke_res.txt
+test-results/
+.playwright/
+data/emails.log

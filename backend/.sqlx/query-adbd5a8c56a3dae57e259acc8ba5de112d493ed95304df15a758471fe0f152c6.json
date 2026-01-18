@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT target_entity_id as permission_type_id, source_entity_id as role_id \n            FROM relationships \n            WHERE relationship_type_id = (SELECT id FROM relationship_types WHERE name = 'grants_permission')\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "permission_type_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "role_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "adbd5a8c56a3dae57e259acc8ba5de112d493ed95304df15a758471fe0f152c6"
+}

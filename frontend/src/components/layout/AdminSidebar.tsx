@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/lib/context'
 import { FirefighterDialog } from '@/components/firefighter/FirefighterDialog'
 import { evaluateNavigation, type NavSectionVisibility } from '@/features/navigation/lib/api'
+import { WorkspaceSwitcher } from '@/components/ui/workspace-switcher'
 
 interface NavItem {
     id: string
@@ -241,6 +242,9 @@ export function AdminSidebar({ previewPermissions }: { previewPermissions?: stri
                 collapsed ? "w-16" : "w-64"
             )}
         >
+            <div className="p-3 border-b border-border/40">
+                <WorkspaceSwitcher collapsed={collapsed} />
+            </div>
             <div className="flex-1 py-4 overflow-y-auto">
                 <nav className="px-2 space-y-6">
                     {navItems.map((section) => {

@@ -506,18 +506,33 @@ async fn test_api_notifications(pool: PgPool) {
         cookie_header.push_str(p[0]);
     }
 
-    // 2. Create Notification (simulate backend event via SQL or Service helper)
-    // Since we don't have a direct "create notification" API (it's internal), we insert via SQL
+    // 2. Create Notification via ontology entities (legacy notifications table was dropped)
     let user_row: (uuid::Uuid,) =
-        sqlx::query_as("SELECT id FROM users WHERE username = 'notif_user'")
+        sqlx::query_as("SELECT id FROM unified_users WHERE username = 'notif_user'")
             .fetch_one(&pool)
             .await
             .unwrap();
     let user_id = user_row.0;
 
-    sqlx::query("INSERT INTO notifications (user_id, message) VALUES ($1, $2)")
-        .bind(user_id)
+    // Get Notification class ID
+    let class_row: (uuid::Uuid,) =
+        sqlx::query_as("SELECT id FROM classes WHERE name = 'Notification' LIMIT 1")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    let class_id = class_row.0;
+
+    // Insert notification as ontology entity
+    let notif_id = uuid::Uuid::new_v4();
+    sqlx::query("INSERT INTO entities (id, class_id, display_name, attributes) VALUES ($1, $2, $3, $4)")
+        .bind(notif_id)
+        .bind(class_id)
         .bind("Test Notification")
+        .bind(serde_json::json!({
+            "user_id": user_id,
+            "message": "Test Notification",
+            "read": false
+        }))
         .execute(&pool)
         .await
         .unwrap();
@@ -776,6 +791,10 @@ async fn test_api_admin_functions(pool: PgPool) {
         )
         .await
         .unwrap();
+
+    // CVE-001 Fix Verification: Grant superadmin role for admin endpoints
+    let services = common::setup_services(pool.clone()).await;
+    services.auth_service.grant_role_for_test("admin@example.com", "superadmin").await.unwrap();
 
     let login_payload = serde_json::json!({
         "identifier": "admin@example.com",

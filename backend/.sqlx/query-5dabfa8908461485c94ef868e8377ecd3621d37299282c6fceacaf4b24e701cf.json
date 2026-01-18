@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT mfa_enabled, mfa_verified, backup_codes, mfa_last_used_at FROM unified_users WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "mfa_enabled",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 1,
+        "name": "mfa_verified",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "backup_codes",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 3,
+        "name": "mfa_last_used_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "5dabfa8908461485c94ef868e8377ecd3621d37299282c6fceacaf4b24e701cf"
+}

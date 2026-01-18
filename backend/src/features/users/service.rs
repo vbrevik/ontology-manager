@@ -128,14 +128,28 @@ impl UserService {
         }
 
         if !updates.is_empty() {
-             sqlx::query(
-                "UPDATE entities SET attributes = attributes || $1, updated_at = NOW() WHERE id = $2"
-            )
-            .bind(serde_json::Value::Object(updates))
-            .bind(user_uuid)
-            .execute(&self.pool)
-            .await?;
+        // Also update display_name if username is being changed
+        let display_name_update = updates.get("username").cloned();
+        
+        sqlx::query(
+            "UPDATE entities SET attributes = attributes || $1, updated_at = NOW() WHERE id = $2"
+        )
+        .bind(serde_json::Value::Object(updates))
+        .bind(user_uuid)
+        .execute(&self.pool)
+        .await?;
+
+        // Update display_name to match username for unified_users view compatibility
+        if let Some(new_username) = display_name_update {
+            if let Some(name_str) = new_username.as_str() {
+                sqlx::query("UPDATE entities SET display_name = $1 WHERE id = $2")
+                    .bind(name_str)
+                    .bind(user_uuid)
+                    .execute(&self.pool)
+                    .await?;
+            }
         }
+    }
 
         let updated_user = self.find_by_id(id).await?;
 

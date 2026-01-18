@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as MfaChallengeRouteImport } from './routes/mfa-challenge'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -19,11 +21,13 @@ import { Route as DebugRouteImport } from './routes/debug'
 import { Route as ApiManagementRouteImport } from './routes/api-management'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as StatsUsersRouteImport } from './routes/stats/users'
 import { Route as StatsSystemRouteImport } from './routes/stats/system'
 import { Route as StatsSessionsRouteImport } from './routes/stats/sessions'
 import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password/$token'
+import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminSessionsRouteImport } from './routes/admin/sessions'
 import { Route as AdminSchedulesRouteImport } from './routes/admin/schedules'
@@ -65,9 +69,19 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MfaChallengeRoute = MfaChallengeRouteImport.update({
+  id: '/mfa-challenge',
+  path: '/mfa-challenge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -105,6 +119,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -129,6 +148,11 @@ const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
   id: '/reset-password/$token',
   path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
+  id: '/$projectId',
+  path: '/$projectId',
+  getParentRoute: () => ProjectsRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
@@ -290,7 +314,9 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/profile': typeof ProfileRoute
+  '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
@@ -305,11 +331,13 @@ export interface FileRoutesByFullPath {
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -336,6 +364,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
@@ -349,11 +378,13 @@ export interface FileRoutesByTo {
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin': typeof AdminIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -382,7 +413,9 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/logs': typeof LogsRoute
+  '/mfa-challenge': typeof MfaChallengeRoute
   '/profile': typeof ProfileRoute
+  '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
@@ -397,11 +430,13 @@ export interface FileRoutesById {
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/stats/sessions': typeof StatsSessionsRoute
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -431,7 +466,9 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/mfa-challenge'
     | '/profile'
+    | '/projects'
     | '/register'
     | '/reports'
     | '/admin/abac'
@@ -446,11 +483,13 @@ export interface FileRouteTypes {
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/projects/$projectId'
     | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/projects/'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -477,6 +516,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/mfa-challenge'
     | '/profile'
     | '/register'
     | '/reports'
@@ -490,11 +530,13 @@ export interface FileRouteTypes {
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/projects/$projectId'
     | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
     | '/admin'
+    | '/projects'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -522,7 +564,9 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/logs'
+    | '/mfa-challenge'
     | '/profile'
+    | '/projects'
     | '/register'
     | '/reports'
     | '/admin/abac'
@@ -537,11 +581,13 @@ export interface FileRouteTypes {
     | '/admin/schedules'
     | '/admin/sessions'
     | '/admin/users'
+    | '/projects/$projectId'
     | '/reset-password/$token'
     | '/stats/sessions'
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/projects/'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -570,7 +616,9 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   LogsRoute: typeof LogsRoute
+  MfaChallengeRoute: typeof MfaChallengeRoute
   ProfileRoute: typeof ProfileRoute
+  ProjectsRoute: typeof ProjectsRouteWithChildren
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
@@ -595,11 +643,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mfa-challenge': {
+      id: '/mfa-challenge'
+      path: '/mfa-challenge'
+      fullPath: '/mfa-challenge'
+      preLoaderRoute: typeof MfaChallengeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -651,6 +713,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof ProjectsRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -685,6 +754,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password/$token'
       preLoaderRoute: typeof ResetPasswordTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/projects/$projectId': {
+      id: '/projects/$projectId'
+      path: '/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof ProjectsProjectIdRouteImport
+      parentRoute: typeof ProjectsRoute
     }
     '/admin/users': {
       id: '/admin/users'
@@ -999,6 +1075,20 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface ProjectsRouteChildren {
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
+}
+
+const ProjectsRouteChildren: ProjectsRouteChildren = {
+  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
+}
+
+const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
+  ProjectsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1007,7 +1097,9 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   LogsRoute: LogsRoute,
+  MfaChallengeRoute: MfaChallengeRoute,
   ProfileRoute: ProfileRoute,
+  ProjectsRoute: ProjectsRouteWithChildren,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,

@@ -65,12 +65,24 @@ function Login() {
     try {
       const result = await login(values.identifier, values.password, values.rememberMe)
 
-      if (result.success && result.mfaRequired && result.userId) {
-        setMfaUserId(result.userId)
-        setMfaRememberMe(values.rememberMe)
-        setShowMfa(true)
-        setIsLoading(false)
-        return
+      // Check if MFA is required (new MFA integration)
+      if (result.success && result.mfaRequired) {
+        // Store MFA token and remember_me preference in sessionStorage
+        if (result.mfaToken) {
+          sessionStorage.setItem('mfa_token', result.mfaToken)
+          sessionStorage.setItem('remember_me', values.rememberMe ? 'true' : 'false')
+          // Redirect to MFA challenge page
+          navigate({ to: '/mfa-challenge' })
+          return
+        }
+        // Fallback to old MFA flow (if mfaToken not present)
+        if (result.userId) {
+          setMfaUserId(result.userId)
+          setMfaRememberMe(values.rememberMe)
+          setShowMfa(true)
+          setIsLoading(false)
+          return
+        }
       }
 
       if (!result.success) {
@@ -168,25 +180,33 @@ function Login() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="rememberMe"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md py-2">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
-                        Remember me
-                      </FormLabel>
-                    </div>
-                  </FormItem>
-                )}
-              />
+              <div className="flex items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name="rememberMe"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                          Remember me
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign in'}

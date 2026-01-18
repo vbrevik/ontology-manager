@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT rt.token_id as id, rt.user_id, u.username, u.email, \n                   rt.created_at, rt.expires_at, rt.user_agent, rt.ip_address\n            FROM unified_refresh_tokens rt\n            JOIN unified_users u ON rt.user_id = u.id\n            WHERE rt.expires_at > NOW()\n            ORDER BY rt.created_at DESC\n            LIMIT $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "username",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "email",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "user_agent",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "ip_address",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "916beeba2e7833cb5c7aba73fdb4ab4c8d4c932a819c454b83e9e337047f86f9"
+}

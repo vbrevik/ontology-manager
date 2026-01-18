@@ -19,7 +19,7 @@ async fn test_user_crud_flow_with_ontology_sync(pool: PgPool) {
         .expect("Failed to create user via service");
 
     assert_eq!(user.username, username);
-    assert_eq!(user.email, email);
+    assert_eq!(user.email.as_deref(), Some(email));
 
     // 2. Verify SQL Existence
     let sql_user = services

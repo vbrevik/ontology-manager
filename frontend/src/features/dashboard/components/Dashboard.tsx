@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Users, Activity, ShieldCheck, Zap, Server, Cpu, HardDrive, Network, BrainCircuit, Terminal, AlertCircle } from 'lucide-react'
+import { Users, Activity, ShieldCheck, Zap, Server, Cpu, HardDrive, Network, BrainCircuit, Terminal, AlertCircle, FolderKanban, Settings, ArrowRight } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
@@ -167,7 +167,49 @@ export default function Dashboard() {
   const activeSessions = stats?.active_refresh_tokens ?? 0
 
   return (
-    <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+      {/* Quick Launch Section */}
+      <section className="space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground/60 px-1">Quick Launch Workspaces</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link to="/projects" className="group relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-emerald-500/5 to-emerald-500/10 p-8 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 p-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12 opacity-20">
+              <FolderKanban size={120} className="text-emerald-500" />
+            </div>
+            <div className="relative z-10 space-y-4">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-500/20">
+                <FolderKanban size={24} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Projects Workspace</h3>
+                <p className="text-muted-foreground mt-1 max-w-[280px]">Manage ontologies, tasks, and team collaboration in a dedicated workspace.</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-bold text-emerald-500">
+                Launch Workspace <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </Link>
+
+          <Link to="/admin" className="group relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-orange-500/5 to-orange-500/10 p-8 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500 hover:-translate-y-1">
+            <div className="absolute top-0 right-0 p-8 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12 opacity-20">
+              <Settings size={120} className="text-orange-500" />
+            </div>
+            <div className="relative z-10 space-y-4">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20">
+                <Settings size={24} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Administration Console</h3>
+                <p className="text-muted-foreground mt-1 max-w-[280px]">Configure identity, access policies, and monitor system-wide metrics.</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-bold text-orange-500">
+                Open Console <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+              </div>
+            </div>
+          </Link>
+        </div>
+      </section>
 
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">

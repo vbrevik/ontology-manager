@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO relationships (source_entity_id, target_entity_id, relationship_type_id)\n                VALUES ($1, $2, $3)\n                ON CONFLICT DO NOTHING\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf8b12f4bd4fae4346e2f8b8c46a222129152de7307a72666e6c9bc488a6abb4"
+}
