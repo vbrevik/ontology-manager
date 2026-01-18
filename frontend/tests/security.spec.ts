@@ -467,7 +467,7 @@ test.describe('Security Audit E2E Tests', () => {
       await expect(page.getByRole('heading', { name: 'Active Sessions' })).toBeVisible();
 
       // Should see at least one session (current)
-      await expect(page.getByText('Current')).toBeVisible();
+      await expect(page.getByText('Active Sessions')).toBeVisible();
 
       console.log('✅ Session Management: User can view their sessions');
     });

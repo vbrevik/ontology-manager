@@ -137,7 +137,7 @@ BEGIN
     
     INSERT INTO properties (class_id, name, data_type, is_required, description, version_id)
     VALUES
-        (v_permission_change_class_id, 'change_type', 'string', TRUE, 'grant, revoke, modify', v_permission_change_class_id),
+        (v_permission_change_class_id, 'change_type', 'string', TRUE, 'grant, revoke, modify', v_version_id),
         (v_permission_change_class_id, 'permission_name', 'string', FALSE, 'Permission that changed', v_version_id),
         (v_permission_change_class_id, 'role_name', 'string', FALSE, 'Role that changed', v_version_id),
         (v_permission_change_class_id, 'target_entity_id', 'uuid', FALSE, 'Entity affected by change', v_version_id),

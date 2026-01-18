@@ -8,8 +8,18 @@
 -- 1. PGAUDIT EXTENSION (Database Activity Monitoring)
 -- ================================================================
 
--- Install pgaudit for comprehensive database audit logging
-CREATE EXTENSION IF NOT EXISTS pgaudit;
+-- Install pgaudit for comprehensive database audit logging (skip if not available)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM pg_available_extensions WHERE name = 'pgaudit'
+    ) THEN
+        CREATE EXTENSION IF NOT EXISTS pgaudit;
+        RAISE NOTICE 'pgaudit extension enabled';
+    ELSE
+        RAISE NOTICE 'pgaudit extension not available - skipping (development mode)';
+    END IF;
+END $$;
 
 -- Configure pgaudit settings (will be set in postgresql.conf)
 -- pgaudit.log = 'ddl, role, function'
@@ -17,7 +27,7 @@ CREATE EXTENSION IF NOT EXISTS pgaudit;
 -- pgaudit.log_parameter = on
 -- pgaudit.log_relation = on
 
-COMMENT ON EXTENSION pgaudit IS 'PostgreSQL Audit Extension for comprehensive database activity logging';
+-- COMMENT ON EXTENSION pgaudit IS 'PostgreSQL Audit Extension for comprehensive database activity logging' (commented out - extension not available);
 
 -- ================================================================
 -- 2. FAILED AUTHENTICATION TRACKING
@@ -30,7 +40,7 @@ CREATE TABLE IF NOT EXISTS failed_auth_attempts (
     
     -- Who tried to authenticate
     attempted_identifier VARCHAR(255) NOT NULL, -- email, username, or user_id
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL, -- NULL if user doesn't exist
+    user_id UUID REFERENCES entities(id) ON DELETE SET NULL, -- NULL if user entity doesn't exist
     
     -- Where did they try from
     ip_address INET NOT NULL,
@@ -75,7 +85,7 @@ CREATE TABLE IF NOT EXISTS security_events (
     severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
     
     -- Actor information
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES entities(id) ON DELETE SET NULL,
     ip_address INET,
     user_agent TEXT,
     

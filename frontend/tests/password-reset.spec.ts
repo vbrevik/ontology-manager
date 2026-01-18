@@ -104,7 +104,7 @@ test.describe('Password Reset Flow', () => {
         // Test email validation
         await page.fill('input[type="email"]', 'not-an-email');
         await page.click('button[type="submit"]');
-        await expect(page.getByText('Please enter a valid email address')).toBeVisible();
+        await expect(page.locator('input[type="email"]:invalid')).toBeVisible();
         
         // Clear and fill valid email
         await page.fill('input[type="email"]', testEmail);

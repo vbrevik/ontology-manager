@@ -174,7 +174,7 @@ BEGIN
     -- triggered_by: SecurityEvent triggered_by User
     INSERT INTO relationship_types (id, name, description, source_cardinality, target_cardinality, allowed_source_class_id, allowed_target_class_id, grants_permission_inheritance)
     VALUES (
-        'a1b2c3d4-e5f6-7890-abcd-400000000001',
+        'b1b2c3d4-e5f6-7890-abcd-400000000001',
         'triggered_by',
         'Security event was triggered by a specific user',
         'many',
@@ -189,7 +189,7 @@ BEGIN
     -- detected_in: FailedAuthAttempt detected_in SecurityEvent
     INSERT INTO relationship_types (id, name, description, source_cardinality, target_cardinality, allowed_source_class_id, allowed_target_class_id, grants_permission_inheritance)
     VALUES (
-        'a1b2c3d4-e5f6-7890-abcd-400000000002',
+        'b1b2c3d4-e5f6-7890-abcd-400000000002',
         'detected_in',
         'Failed auth attempt was detected as a security event',
         'many',
@@ -204,7 +204,7 @@ BEGIN
     -- monitors: AlertRule monitors SecurityEvent
     INSERT INTO relationship_types (id, name, description, source_cardinality, target_cardinality, allowed_source_class_id, allowed_target_class_id, grants_permission_inheritance)
     VALUES (
-        'a1b2c3d4-e5f6-7890-abcd-400000000003',
+        'b1b2c3d4-e5f6-7890-abcd-400000000003',
         'monitors',
         'Alert rule monitors for specific security events',
         'many',
@@ -219,7 +219,7 @@ BEGIN
     -- targets: SuspiciousQuery targets User
     INSERT INTO relationship_types (id, name, description, source_cardinality, target_cardinality, allowed_source_class_id, allowed_target_class_id, grants_permission_inheritance)
     VALUES (
-        'a1b2c3d4-e5f6-7890-abcd-400000000004',
+        'b1b2c3d4-e5f6-7890-abcd-400000000004',
         'targets',
         'Suspicious query was executed by a user',
         'many',
