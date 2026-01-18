@@ -294,8 +294,6 @@ async fn main() {
         .nest("/api", api_router)
         .with_state(auth_service.clone())
         .layer(tower_cookies::CookieManagerLayer::new())
-        .layer(axum::Extension(rate_limiter))
-        .layer(axum::middleware::from_fn(middleware::rate_limit::rate_limit_middleware))
         .layer(axum::Extension(config_arc))
         .layer(
             CorsLayer::new()
