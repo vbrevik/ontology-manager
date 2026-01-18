@@ -156,6 +156,12 @@ async fn main() {
         auth_service: auth_service.clone(),
     };
 
+    // Test Mode Service
+    let test_mode_service = features::test_mode::TestModeService::new(
+        pool.clone(),
+        audit_service.clone(),
+    );
+
     // AI Service - Default to docker host access if not set (Ollama as local native service)
     let ai_url =
         std::env::var("AI_SERVICE_URL").unwrap_or_else(|_| "http://localhost:11434/v1".to_string());
@@ -269,6 +275,13 @@ async fn main() {
             "/firefighter",
             features::firefighter::routes::firefighter_routes()
                 .with_state(firefighter_service)
+                .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
+        )
+        .nest(
+            "/test-mode",
+            features::test_mode::create_test_mode_routes()
+                .with_state(test_mode_service)
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         )

@@ -14,3 +14,4 @@ pub mod system;
 pub mod users;
 pub mod monitoring;
 pub mod test_marker;
+pub mod test_mode;
