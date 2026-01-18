@@ -19,3 +19,8 @@ test-results/
 .playwright/
 data/emails.log
 # Add secrets/
+
+# Backup data (local only)
+external_storage/
+backup-agent/*.log
+backup-extractor/*.log
