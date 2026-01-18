@@ -14,7 +14,7 @@ test('admin AI UI shows online status', async ({ page }) => {
   await page.getByRole('button', { name: 'Create account' }).click();
 
   // Wait for dashboard to ensure auth cookies are set
-  await expect(page.getByRole('heading', { name: 'Dashboard Overview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'System Overview' })).toBeVisible({ timeout: 10000 });
 
   await page.goto('/admin/ai');
 

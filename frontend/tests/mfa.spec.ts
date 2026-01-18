@@ -65,7 +65,7 @@ test.describe('MFA Login Flow', () => {
         await page.goto('http://localhost:5373/mfa-challenge');
         
         // Should show the form now
-        await expect(page.locator('h1:has-text("Two-Factor Authentication")')).toBeVisible({ timeout: 5000 });
+        await expect(page.getByRole('heading', { name: 'Two-Factor Authentication' })).toBeVisible({ timeout: 5000 });
         
         // Click cancel
         await page.click('button:has-text("Cancel")');

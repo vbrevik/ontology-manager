@@ -9,9 +9,10 @@ use axum::{
 use serde::Deserialize;
 use std::sync::Arc;
 use uuid::Uuid;
+use tracing;
 
 use super::unified_service::UnifiedMonitoringService;
-use crate::features::auth::middleware::Claims;
+use crate::features::auth::jwt::Claims;
 
 /// Query parameters for listing
 #[derive(Debug, Deserialize)]
@@ -38,7 +39,7 @@ pub async fn get_failed_auth_ontology(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get failed auth from ontology: {}", e);
+            tracing::error!("Failed to get failed auth from ontology: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -57,7 +58,7 @@ pub async fn get_security_events_ontology(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get security events from ontology: {}", e);
+            tracing::error!("Failed to get security events from ontology: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -75,7 +76,7 @@ pub async fn get_alert_rules_ontology(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get alert rules from ontology: {}", e);
+            tracing::error!("Failed to get alert rules from ontology: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -94,7 +95,7 @@ pub async fn get_monitoring_entity(
         .check_monitoring_permission(user_id, entity_id, "view_security_events")
         .await
         .map_err(|e| {
-            log::error!("Permission check failed: {}", e);
+            tracing::error!("Permission check failed: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -126,10 +127,10 @@ pub async fn get_monitoring_entity(
         "#,
         entity_id
     )
-    .fetch_optional(service.db.clone())
+    .fetch_optional(service.db())
     .await
     .map_err(|e| {
-        log::error!("Database error: {}", e);
+        tracing::error!("Database error: {}", e);
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
@@ -159,7 +160,7 @@ pub async fn create_failed_auth_ontology(
         .log_failed_auth_ontology(request)
         .await
         .map_err(|e| {
-            log::error!("Failed to create failed auth in ontology: {}", e);
+            tracing::error!("Failed to create failed auth in ontology: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
@@ -179,7 +180,7 @@ pub async fn create_security_event_ontology(
         .log_security_event_ontology(request)
         .await
         .map_err(|e| {
-            log::error!("Failed to create security event in ontology: {}", e);
+            tracing::error!("Failed to create security event in ontology: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 

@@ -7,6 +7,7 @@ use axum::{
 };
 use serde::Deserialize;
 use std::sync::Arc;
+use tracing;
 
 use super::service::MonitoringService;
 
@@ -31,7 +32,7 @@ pub async fn get_dashboard(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get dashboard stats: {}", e);
+            tracing::error!("Failed to get dashboard stats: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -47,7 +48,7 @@ pub async fn get_recent_events(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get recent events: {}", e);
+            tracing::error!("Failed to get recent events: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -62,7 +63,7 @@ pub async fn get_event_summary(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get event summary: {}", e);
+            tracing::error!("Failed to get event summary: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -78,7 +79,7 @@ pub async fn get_failed_auth(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get failed auth: {}", e);
+            tracing::error!("Failed to get failed auth: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -93,7 +94,7 @@ pub async fn get_failed_auth_by_ip(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get failed auth by IP: {}", e);
+            tracing::error!("Failed to get failed auth by IP: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -108,7 +109,7 @@ pub async fn get_alert_rules(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get alert rules: {}", e);
+            tracing::error!("Failed to get alert rules: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }

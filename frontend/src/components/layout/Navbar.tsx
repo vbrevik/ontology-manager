@@ -96,6 +96,7 @@ export function Navbar() {
                         <div className="h-6 w-[1px] bg-border/60 mx-1 hidden sm:block" />
                         <div className="relative" ref={menuRef}>
                             <button
+                                data-testid="user-menu"
                                 onClick={() => setMenuOpen(!menuOpen)}
                                 className="flex items-center gap-2 rounded-full border border-border/60 pl-1 pr-1.5 py-1 hover:bg-muted/50 transition-all active:scale-95"
                             >
@@ -143,6 +144,7 @@ export function Navbar() {
                                     </div>
                                     <div className="h-px bg-border/40 my-2 mx-1" />
                                     <button
+                                        data-testid="logout-button"
                                         className="flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 transition-colors"
                                         onClick={handleLogout}
                                     >

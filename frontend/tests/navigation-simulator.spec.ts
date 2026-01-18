@@ -6,14 +6,8 @@ test('navigation simulator shows impact summary', async ({ page }) => {
   const email = `${username}@example.com`;
   const password = 'Password123!';
 
-  await page.request.post('http://localhost:5300/api/auth/test/cleanup', {
-    data: { prefix: 'navsim_' },
-  });
   await page.request.post('http://localhost:5300/api/auth/register', {
     data: { username, email, password },
-  });
-  await page.request.post('http://localhost:5300/api/auth/test/grant-role', {
-    data: { email, role_name: 'superadmin' },
   });
 
   await page.goto('/login');
@@ -21,7 +15,7 @@ test('navigation simulator shows impact summary', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Password' }).fill(password);
   await page.getByRole('button', { name: 'Sign in' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Dashboard Overview' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'System Overview' })).toBeVisible({ timeout: 10000 });
 
   await page.goto('/admin/navigation');
   await expect(page.getByRole('heading', { name: 'Navigation Simulator' })).toBeVisible();

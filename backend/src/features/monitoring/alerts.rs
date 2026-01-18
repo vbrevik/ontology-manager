@@ -2,6 +2,7 @@ use super::models::AlertRule;
 use reqwest::Client;
 use serde_json::json;
 use std::env;
+use tracing;
 
 /// Alert System
 /// Sends security alerts to configured channels (Slack, Discord, Email, etc.)
@@ -33,7 +34,7 @@ impl AlertSystem {
             "pagerduty" => self.send_pagerduty_alert(rule, &message).await,
             "webhook" => self.send_webhook_alert(&message).await,
             _ => {
-                log::warn!("Unknown alert channel: {}", rule.alert_channel);
+                tracing::warn!("Unknown alert channel: {}", rule.alert_channel);
                 Ok(())
             }
         }
@@ -84,12 +85,12 @@ impl AlertSystem {
                 .await?;
 
             if !response.status().is_success() {
-                log::error!("Failed to send Slack alert: {}", response.status());
+                tracing::error!("Failed to send Slack alert: {}", response.status());
             } else {
-                log::info!("Slack alert sent successfully");
+                tracing::info!("Slack alert sent successfully");
             }
         } else {
-            log::warn!("Slack webhook not configured (SLACK_WEBHOOK_URL)");
+            tracing::warn!("Slack webhook not configured (SLACK_WEBHOOK_URL)");
         }
 
         Ok(())
@@ -111,12 +112,12 @@ impl AlertSystem {
                 .await?;
 
             if !response.status().is_success() {
-                log::error!("Failed to send Discord alert: {}", response.status());
+                tracing::error!("Failed to send Discord alert: {}", response.status());
             } else {
-                log::info!("Discord alert sent successfully");
+                tracing::info!("Discord alert sent successfully");
             }
         } else {
-            log::warn!("Discord webhook not configured (DISCORD_WEBHOOK_URL)");
+            tracing::warn!("Discord webhook not configured (DISCORD_WEBHOOK_URL)");
         }
 
         Ok(())
@@ -151,12 +152,12 @@ impl AlertSystem {
                 .await?;
 
             if !response.status().is_success() {
-                log::error!("Failed to send PagerDuty alert: {}", response.status());
+                tracing::error!("Failed to send PagerDuty alert: {}", response.status());
             } else {
-                log::info!("PagerDuty alert sent successfully");
+                tracing::info!("PagerDuty alert sent successfully");
             }
         } else {
-            log::warn!("PagerDuty not configured (PAGERDUTY_INTEGRATION_KEY)");
+            tracing::warn!("PagerDuty not configured (PAGERDUTY_INTEGRATION_KEY)");
         }
 
         Ok(())
@@ -178,12 +179,12 @@ impl AlertSystem {
                 .await?;
 
             if !response.status().is_success() {
-                log::error!("Failed to send webhook alert: {}", response.status());
+                tracing::error!("Failed to send webhook alert: {}", response.status());
             } else {
-                log::info!("Webhook alert sent successfully");
+                tracing::info!("Webhook alert sent successfully");
             }
         } else {
-            log::warn!("Custom webhook not configured (CUSTOM_WEBHOOK_URL)");
+            tracing::warn!("Custom webhook not configured (CUSTOM_WEBHOOK_URL)");
         }
 
         Ok(())

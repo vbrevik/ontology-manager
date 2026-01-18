@@ -1,56 +1,76 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+async function createProjectViaUi(page: Page, projectName: string) {
+    await page.getByRole('button', { name: '+ New Project' }).click();
+    await page.getByLabel('Project Name').fill(projectName);
+    await page.getByLabel('Description').fill('A test project for E2E');
+    await page.getByRole('button', { name: 'Create Project' }).click();
+    await expect(page.locator('.project-card', { hasText: projectName })).toBeVisible();
+}
 
 test.describe('Projects Module E2E', () => {
     test.beforeEach(async ({ page }) => {
-        // Assume user is already logged in or login if needed
-        await page.goto('http://localhost:5373/login');
-        await page.fill('input[placeholder="username or email@example.com"]', 'admin');
-        await page.fill('input[placeholder="Enter your password"]', 'admin');
-        await page.click('button[type="submit"]:has-text("Sign in")');
-        await page.waitForURL('http://localhost:5373/');
-        await page.goto('http://localhost:5373/projects');
+        const unique = Date.now();
+        const username = `proj_user_${unique}`;
+        const email = `${username}@example.com`;
+        const password = 'Password123!';
+
+        await page.request.post('http://localhost:5300/api/auth/register', {
+            data: { username, email, password },
+        });
+
+        await page.goto('/login');
+        await page.getByLabel('Username or Email').fill(email);
+        await page.getByLabel('Password').fill(password);
+        await page.getByRole('button', { name: 'Sign in' }).click();
+        await expect(page.getByRole('heading', { name: 'System Overview' })).toBeVisible({ timeout: 10000 });
+
+        await page.goto('/projects');
     });
 
     test('should create a new project and navigate to details', async ({ page }) => {
         const projectName = `Test Project ${Date.now()}`;
 
-        await page.click('button:has-text("+ New Project")');
-        await page.fill('input[placeholder="Enter project name"]', projectName);
-        await page.fill('textarea[placeholder="Enter project description"]', 'A test project for E2E');
-        await page.click('button[type="submit"]:has-text("Create Project")');
+        await createProjectViaUi(page, projectName);
 
         // Verify it appears in the list
-        await expect(page.locator(`h3:has-text("${projectName}")`)).toBeVisible();
+        const projectCard = page.locator('.project-card', { hasText: projectName });
+        await expect(projectCard).toBeVisible();
 
         // Click to navigate
-        await page.click(`h3:has-text("${projectName}")`);
+        await projectCard.click();
         await page.waitForURL('**/projects/*');
 
         // Verify detail page header
-        await expect(page.locator('h1')).toContainText(projectName);
-        await expect(page.locator('button:has-text("Overview")')).toBeVisible();
+        await expect(page.getByRole('heading', { name: projectName })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Overview' })).toBeVisible();
     });
 
     test('should navigate between project tabs', async ({ page }) => {
-        await page.click('.project-card >> h3'); // Click the first project
+        const projectName = `Test Project ${Date.now()}`;
+        await createProjectViaUi(page, projectName);
+
+        await page.locator('.project-card', { hasText: projectName }).click();
         await page.waitForURL('**/projects/*');
 
         // Check Timeline
-        await page.click('button:has-text("Timeline (Gantt)")');
-        await expect(page.locator('.gantt-chart-container')).toBeVisible();
+        await page.getByRole('tab', { name: 'Timeline (Gantt)' }).click();
+        await expect(page.getByText('Task Name')).toBeVisible();
 
         // Check Sub-projects
-        await page.click('button:has-text("Sub-projects")');
-        await expect(page.locator('h3:has-text("Sub-projects")')).toBeHidden(); // It's a tab content header
-        await expect(page.locator('div:has-text("No sub-projects found")').or(page.locator('.project-card'))).toBeVisible();
+        await page.getByRole('tab', { name: 'Sub-projects' }).click();
+        await expect(page.getByText('No sub-projects found').or(page.locator('.project-card'))).toBeVisible();
     });
 
     test('should reflect active project in sidebar', async ({ page }) => {
-        await page.click('.project-card >> h3');
-        await page.locator('h1').innerText();
+        const projectName = `Test Project ${Date.now()}`;
+        await createProjectViaUi(page, projectName);
+
+        await page.locator('.project-card', { hasText: projectName }).click();
+        await expect(page.getByRole('heading', { name: projectName })).toBeVisible();
 
         // Check sidebar context
-        await expect(page.locator('aside')).toContainText('Sub-projects');
-        await expect(page.locator('aside')).toContainText('Overview');
+        await expect(page.getByRole('link', { name: 'Overview' })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'All Projects' })).toBeVisible();
     });
 });

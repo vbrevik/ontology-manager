@@ -9,9 +9,10 @@ use axum::{
 use serde::Deserialize;
 use std::sync::Arc;
 use uuid::Uuid;
+use tracing;
 
 use super::analytics::MonitoringAnalytics;
-use crate::features::auth::middleware::Claims;
+use crate::features::auth::jwt::Claims;
 
 /// Query parameters for timeline
 #[derive(Debug, Deserialize)]
@@ -83,7 +84,7 @@ pub async fn get_dashboard_stats(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get dashboard stats: {}", e);
+            tracing::error!("Failed to get dashboard stats: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -105,7 +106,7 @@ pub async fn get_timeline(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get timeline: {}", e);
+            tracing::error!("Failed to get timeline: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -122,7 +123,7 @@ pub async fn get_hourly_stats(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get hourly stats: {}", e);
+            tracing::error!("Failed to get hourly stats: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -139,7 +140,7 @@ pub async fn get_top_ips(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get top IPs: {}", e);
+            tracing::error!("Failed to get top IPs: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -156,7 +157,7 @@ pub async fn get_user_activity(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get user activity: {}", e);
+            tracing::error!("Failed to get user activity: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -173,7 +174,7 @@ pub async fn get_distribution(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get distribution: {}", e);
+            tracing::error!("Failed to get distribution: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -190,7 +191,7 @@ pub async fn get_trend(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get trend: {}", e);
+            tracing::error!("Failed to get trend: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -207,7 +208,7 @@ pub async fn get_anomalies(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to detect anomalies: {}", e);
+            tracing::error!("Failed to detect anomalies: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }
@@ -224,7 +225,7 @@ pub async fn get_severity_breakdown(
         .await
         .map(Json)
         .map_err(|e| {
-            log::error!("Failed to get severity breakdown: {}", e);
+            tracing::error!("Failed to get severity breakdown: {}", e);
             StatusCode::INTERNAL_SERVER_ERROR
         })
 }

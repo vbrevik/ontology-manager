@@ -460,7 +460,7 @@ impl MonitoringAnalytics {
         // Group by IP and check for rapid attempts
         let mut ip_attempts: HashMap<String, Vec<DateTime<Utc>>> = HashMap::new();
         for attempt in rapid_failed_auth {
-            if let Some(ip) = attempt.attributes.get("ip_address").and_then(|v| v.as_str()) {
+            if let Some(ip) = attempt.attributes.get("ip_address").and_then(|v: &serde_json::Value| v.as_str()) {
                 ip_attempts
                     .entry(ip.to_string())
                     .or_insert_with(Vec::new)
@@ -517,7 +517,7 @@ impl MonitoringAnalytics {
         .await?;
 
         for api in slow_apis {
-            if let Some(response_time) = api.attributes.get("response_time_ms").and_then(|v| v.as_i64()) {
+            if let Some(response_time) = api.attributes.get("response_time_ms").and_then(|v: &serde_json::Value| v.as_i64()) {
                 anomalies.push(Anomaly {
                     entity_id: api.id,
                     anomaly_type: "slow_api_response".to_string(),

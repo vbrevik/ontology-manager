@@ -29,6 +29,11 @@ impl UnifiedMonitoringService {
         }
     }
 
+    /// Get database pool reference
+    pub fn db(&self) -> &PgPool {
+        &self.db
+    }
+
     /// Log failed auth attempt as ontology entity
     pub async fn log_failed_auth_ontology(
         &self,
@@ -238,10 +243,11 @@ impl UnifiedMonitoringService {
     ) -> Result<bool, Box<dyn std::error::Error>> {
         if let Some(rebac) = &self.rebac_service {
             // Check ReBAC permission
-            return rebac
-                .check_permission(user_id, entity_id, permission)
+            let result = rebac
+                .check_permission(user_id, entity_id, permission, None, None)
                 .await
-                .map_err(|e| e.into());
+                .map_err(|e| e.to_string())?;
+            return Ok(result.has_permission);
         }
 
         // Fallback: check if user has admin role
@@ -499,9 +505,9 @@ impl UnifiedMonitoringService {
 
                 // Convert to AlertRule for alerting
                 let alert_rule = super::models::AlertRule {
-                    id: rule.id.unwrap(),
-                    rule_name: rule.rule_name.unwrap(),
-                    description: rule.attributes.get("description").and_then(|v| v.as_str()).map(String::from),
+                    id: rule.id,
+                    rule_name: rule.rule_name,
+                    description: rule.attributes.get("description").and_then(|v: &serde_json::Value| v.as_str()).map(String::from),
                     enabled: rule.attributes.get("enabled").and_then(|v| v.as_bool()).unwrap_or(true),
                     event_type: rule.attributes.get("event_type").and_then(|v| v.as_str()).map(String::from),
                     min_severity: rule.attributes.get("min_severity").and_then(|v| v.as_str()).map(String::from),
