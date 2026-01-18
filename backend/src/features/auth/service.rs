@@ -159,7 +159,9 @@ impl AuthService {
             .await?;
 
         if existing_user.is_some() {
-            return Err(AuthError::UserExists);
+            // CVE-003 Fix: Generic error message to prevent user enumeration
+            // Don't reveal whether email or username is taken
+            return Err(AuthError::ValidationError("Invalid registration data".to_string()));
         }
 
         // Hash password with Argon2
@@ -435,8 +437,9 @@ impl AuthService {
         let user = match user_opt {
             Some(u) => u,
             None => {
-                // Determine if we should delay to match timing? 
-                // For now, just return OK with None (no user enumeration).
+                // CVE-003 Fix: Add constant-time delay to prevent user enumeration
+                // This delay matches the average time for the full password reset flow
+                tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
                 return Ok(None);
             }
         };

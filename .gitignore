@@ -18,3 +18,4 @@ revoke_res.txt
 test-results/
 .playwright/
 data/emails.log
+# Add secrets/

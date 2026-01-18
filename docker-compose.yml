@@ -9,15 +9,19 @@ services:
       - ./backend/data:/app/data
     environment:
       - RUST_LOG=info
-      - APP_DATABASE_URL=postgres://app:app_password@db:5432/app_db?sslmode=disable
-      - DATABASE_URL=postgres://app:app_password@db:5432/app_db?sslmode=disable
+      - APP_DATABASE_URL=postgres://app:${DB_PASSWORD}@db:5432/app_db?sslmode=disable
+      - DATABASE_URL=postgres://app:${DB_PASSWORD}@db:5432/app_db?sslmode=disable
       - AI_SERVICE_URL=http://llm:11434/v1
       - AI_MODEL=llama3
       - AI_PREFER_ENV=true
     depends_on:
       - db
     networks:
-      - appnet
+      - frontend_net  # Can receive requests from frontend
+      - backend_net   # Can communicate with backend services
+      - data_net      # Can access database
+    secrets:
+      - db_password
 
   db:
     build:
@@ -26,12 +30,14 @@ services:
       - "5301:5432"
     environment:
       - POSTGRES_USER=app
-      - POSTGRES_PASSWORD=app_password
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
       - POSTGRES_DB=app_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - appnet
+      - data_net  # ONLY on data network (isolated, no internet access)
+    secrets:
+      - db_password
 
   frontend:
     image: node:20-bullseye
@@ -46,7 +52,7 @@ services:
     environment:
       - VITE_PROXY_TARGET=http://backend:5300
     networks:
-      - appnet
+      - frontend_net  # Frontend tier
 
   llm:
     image: ollama/ollama:latest
@@ -55,13 +61,22 @@ services:
     volumes:
       - ~/.ollama:/root/.ollama
     networks:
-      - appnet
+      - backend_net  # LLM service on backend network
     environment:
       - OLLAMA_KEEP_ALIVE=24h
 
 networks:
-  appnet:
+  frontend_net:
     driver: bridge
+  backend_net:
+    driver: bridge
+  data_net:
+    driver: bridge
+    internal: true  # Database network is isolated from internet
 
 volumes:
   postgres_data:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

@@ -280,11 +280,22 @@ async fn main() {
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         );
 
+    // CVE-004 Fix: Create rate limiter for auth endpoints
+    let rate_limiter = Arc::new(middleware::rate_limit::RateLimiter::new(5, 15 * 60));
+    
+    // Spawn cleanup task for rate limiter
+    let limiter_clone = rate_limiter.clone();
+    tokio::spawn(async move {
+        middleware::rate_limit::cleanup_task(limiter_clone).await;
+    });
+
     let app = Router::new()
         .route("/health", get(health_check))
         .nest("/api", api_router)
         .with_state(auth_service.clone())
         .layer(tower_cookies::CookieManagerLayer::new())
+        .layer(axum::Extension(rate_limiter))
+        .layer(axum::middleware::from_fn(middleware::rate_limit::rate_limit_middleware))
         .layer(axum::Extension(config_arc))
         .layer(
             CorsLayer::new()
