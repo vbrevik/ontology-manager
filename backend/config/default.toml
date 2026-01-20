@@ -1,4 +1,4 @@
-database_url = "postgres://app:app_password@localhost:5301/app_db"
+database_url = "postgres://app:change_me@localhost:5301/app_db"
 jwt_secret = "your-secret-key-here-change-in-production"
 jwt_expiry = 3600
 refresh_token_expiry = 86400
