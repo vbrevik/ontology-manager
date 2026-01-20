@@ -1,7 +1,7 @@
 # Development Backlog
 
-**Last Updated**: 2026-01-18  
-**Status**: Active Sprint: Security Phase 2
+**Last Updated**: 2026-01-20  
+**Status**: Active Sprint: Security Phase 2 (70% Complete - Multi-agent work integrated)
 
 ---
 
@@ -40,22 +40,22 @@
 
 #### Immutable Backups (Ransomware Protection)
 - [ ] Create S3 bucket with Object Lock (COMPLIANCE mode, 30-day)
-- [ ] Implement automated backup script (hourly pg_basebackup + WAL archiving)
-- [ ] Create backup verification script
-- [ ] Set up backup monitoring
-- [ ] Document recovery procedures (`docs/DISASTER_RECOVERY.md`)
+- [x] Implement automated backup script (hourly pg_dump + checksums + immutability)
+- [x] Create backup verification script (SHA-256 checksums implemented)
+- [x] Set up backup monitoring (audit logging to JSONL)
+- [x] Document recovery procedures (`docs/DISASTER_RECOVERY.md`)
 
 #### Network Segmentation
-- [ ] Create isolated networks (frontend_net, backend_net, data_net)
-- [ ] Update service network assignments
-- [ ] Remove host volume mounts
-- [ ] Add firewall rules documentation
+- [x] Create isolated networks (frontend_net, backend_net, data_net)
+- [x] Update service network assignments
+- [x] Remove host volume mounts (changed to named volumes)
+- [x] Add firewall rules documentation (`docs/NETWORK_SEGMENTATION.md`)
 
 #### Secrets Management
-- [ ] Remove hardcoded passwords from `docker-compose.yml`
-- [ ] Implement Docker secrets
-- [ ] Generate strong database password
-- [ ] Rotate database password
+- [x] Remove hardcoded passwords from `docker-compose.yml`
+- [x] Implement Docker secrets
+- [x] Generate strong database password (exists in secrets/db_password.txt)
+- [ ] Rotate database password (TODO: after deployment)
 
 **Total Tasks**: ~20 | **Time**: 1 week | **Documentation**: `docs/SECURITY_TASKS.md` lines 128-302
 
