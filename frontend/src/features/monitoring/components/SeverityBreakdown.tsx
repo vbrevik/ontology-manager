@@ -1,4 +1,4 @@
-import { useQuery } from '@tantml:react-query'
+import { useQuery } from '@tanstack/react-query'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 interface Props {

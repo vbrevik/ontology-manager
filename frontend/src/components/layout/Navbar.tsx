@@ -4,6 +4,7 @@ import { getFirefighterStatus, type FirefighterStatus } from '@/features/firefig
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/lib/context'
 import Notifications from '@/components/Notifications'
+import { WorkspaceSwitcher } from '@/components/ui/workspace-switcher'
 import { useState, useEffect, useRef } from 'react'
 
 export function Navbar() {
@@ -92,6 +93,7 @@ export function Navbar() {
 
                 {isAuthenticated ? (
                     <div className="flex items-center gap-3">
+                        <WorkspaceSwitcher variant="navbar" />
                         <Notifications />
                         <div className="h-6 w-[1px] bg-border/60 mx-1 hidden sm:block" />
                         <div className="relative" ref={menuRef}>

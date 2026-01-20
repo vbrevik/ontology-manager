@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
+import { SystemStatusLayout } from '@/components/layout/SystemStatusLayout'
 import {
     fetchApiKeys,
     createApiKey,
@@ -32,7 +33,11 @@ import {
 } from '@/features/api-management/lib/api'
 
 export const Route = createFileRoute('/api-management')({
-    component: ApiManagementPage,
+    component: () => (
+        <SystemStatusLayout>
+            <ApiManagementPage />
+        </SystemStatusLayout>
+    ),
 })
 
 function ApiManagementPage() {

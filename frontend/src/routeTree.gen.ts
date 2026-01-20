@@ -43,6 +43,7 @@ import { Route as AdminAccessRouteImport } from './routes/admin/access'
 import { Route as AdminAbacRouteImport } from './routes/admin/abac'
 import { Route as AdminOntologyIndexRouteImport } from './routes/admin/ontology/index'
 import { Route as AdminDiscoveryIndexRouteImport } from './routes/admin/discovery/index'
+import { Route as AdminAccessIndexRouteImport } from './routes/admin/access/index'
 import { Route as AdminRolesManagerRouteImport } from './routes/admin/roles/manager'
 import { Route as AdminRolesDesignerRouteImport } from './routes/admin/roles/designer'
 import { Route as AdminRolesDelegationRouteImport } from './routes/admin/roles/delegation'
@@ -230,6 +231,11 @@ const AdminDiscoveryIndexRoute = AdminDiscoveryIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminDiscoveryRoute,
 } as any)
+const AdminAccessIndexRoute = AdminAccessIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAccessRoute,
+} as any)
 const AdminRolesManagerRoute = AdminRolesManagerRouteImport.update({
   id: '/roles/manager',
   path: '/roles/manager',
@@ -361,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
   '/admin/ontology/': typeof AdminOntologyIndexRoute
 }
@@ -377,7 +384,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
-  '/admin/access': typeof AdminAccessRouteWithChildren
   '/admin/ai': typeof AdminAiRoute
   '/admin/firefighter': typeof AdminFirefighterRoute
   '/admin/navigation': typeof AdminNavigationRoute
@@ -409,6 +415,7 @@ export interface FileRoutesByTo {
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/admin/access': typeof AdminAccessIndexRoute
   '/admin/discovery': typeof AdminDiscoveryIndexRoute
   '/admin/ontology': typeof AdminOntologyIndexRoute
 }
@@ -462,6 +469,7 @@ export interface FileRoutesById {
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
   '/admin/ontology/': typeof AdminOntologyIndexRoute
 }
@@ -516,6 +524,7 @@ export interface FileRouteTypes {
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/admin/access/'
     | '/admin/discovery/'
     | '/admin/ontology/'
   fileRoutesByTo: FileRoutesByTo
@@ -532,7 +541,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reports'
     | '/admin/abac'
-    | '/admin/access'
     | '/admin/ai'
     | '/admin/firefighter'
     | '/admin/navigation'
@@ -564,6 +572,7 @@ export interface FileRouteTypes {
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/admin/access'
     | '/admin/discovery'
     | '/admin/ontology'
   id:
@@ -616,6 +625,7 @@ export interface FileRouteTypes {
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/admin/access/'
     | '/admin/discovery/'
     | '/admin/ontology/'
   fileRoutesById: FileRoutesById
@@ -880,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDiscoveryIndexRouteImport
       parentRoute: typeof AdminDiscoveryRoute
     }
+    '/admin/access/': {
+      id: '/admin/access/'
+      path: '/'
+      fullPath: '/admin/access/'
+      preLoaderRoute: typeof AdminAccessIndexRouteImport
+      parentRoute: typeof AdminAccessRoute
+    }
     '/admin/roles/manager': {
       id: '/admin/roles/manager'
       path: '/roles/manager'
@@ -1002,6 +1019,7 @@ interface AdminAccessRouteChildren {
   AdminAccessExplorerRoute: typeof AdminAccessExplorerRoute
   AdminAccessImpactRoute: typeof AdminAccessImpactRoute
   AdminAccessPoliciesRoute: typeof AdminAccessPoliciesRoute
+  AdminAccessIndexRoute: typeof AdminAccessIndexRoute
 }
 
 const AdminAccessRouteChildren: AdminAccessRouteChildren = {
@@ -1011,6 +1029,7 @@ const AdminAccessRouteChildren: AdminAccessRouteChildren = {
   AdminAccessExplorerRoute: AdminAccessExplorerRoute,
   AdminAccessImpactRoute: AdminAccessImpactRoute,
   AdminAccessPoliciesRoute: AdminAccessPoliciesRoute,
+  AdminAccessIndexRoute: AdminAccessIndexRoute,
 }
 
 const AdminAccessRouteWithChildren = AdminAccessRoute._addFileChildren(

@@ -1,3 +1,4 @@
+import { getCsrfToken } from '@/features/auth/lib/auth'
 
 export interface PermissionType {
     id: string;
@@ -35,6 +36,30 @@ export interface CreatePermissionTypeInput {
 export interface UpdatePermissionTypeInput {
     description?: string;
     level?: number;
+}
+
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+    const csrfToken = getCsrfToken()
+    const res = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken || '',
+            ...options.headers,
+        },
+    })
+
+    if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(errorText || `Request failed (${res.status})`)
+    }
+
+    if (res.status === 204) {
+        return null
+    }
+
+    return res.json()
 }
 
 // Ontology Classes
@@ -191,9 +216,7 @@ export interface RolePermissionMapping {
 }
 
 export async function fetchRoles(): Promise<Role[]> {
-    const res = await fetch('/api/abac/roles'); // Reusing existing role endpoint
-    if (!res.ok) throw new Error(`Failed to fetch roles: ${res.status} ${res.statusText}`);
-    return await res.json();
+    return fetchWithAuth('/api/abac/roles') as Promise<Role[]>
 }
 
 export async function fetchRolePermissionMappings(roleId: string): Promise<RolePermissionMapping[]> {
@@ -504,13 +527,10 @@ export async function deleteRelationship(id: string): Promise<void> {
     if (!res.ok) throw new Error('Failed to delete relationship');
 }
 export async function fetchAccessMatrix(userIds: string[]): Promise<Record<string, string[]>> {
-    const res = await fetch('/api/rebac/matrix', {
+    return fetchWithAuth('/api/rebac/matrix', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_ids: userIds })
-    });
-    if (!res.ok) throw new Error('Failed to fetch matrix');
-    return await res.json();
+        body: JSON.stringify({ user_ids: userIds }),
+    }) as Promise<Record<string, string[]>>
 }
 // AI Suggestions
 export async function suggestOntology(context: string): Promise<any[]> {
@@ -653,6 +673,7 @@ export interface TestPolicyResponse {
     condition_results: ConditionTestResult[];
 }
 
+
 export async function testPolicy(request: TestPolicyRequest): Promise<TestPolicyResponse> {
     const res = await fetch('/api/rebac/policies/test', {
         method: 'POST',
@@ -663,4 +684,49 @@ export async function testPolicy(request: TestPolicyRequest): Promise<TestPolicy
     });
     if (!res.ok) throw new Error('Failed to test policy');
     return res.json();
+}
+
+// Policy CRUD for ABAC
+export interface Policy {
+    id: string;
+    name: string;
+    description?: string;
+    effect: string;
+    target_permissions: string[];
+    conditions: ConditionGroup;
+    scope_entity_id?: string;
+    is_active: boolean;
+}
+
+export async function fetchPolicies(activeOnly = false): Promise<Policy[]> {
+    const res = await fetch(`/api/rebac/policies?active_only=${activeOnly}`);
+    if (!res.ok) throw new Error('Failed to fetch policies');
+    return res.json();
+}
+
+export async function createPolicy(input: CreatePolicyInput): Promise<Policy> {
+    const res = await fetch('/api/rebac/policies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input)
+    });
+    if (!res.ok) throw new Error('Failed to create policy');
+    return res.json();
+}
+
+export async function updatePolicy(id: string, input: Partial<CreatePolicyInput>): Promise<Policy> {
+    const res = await fetch(`/api/rebac/policies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input)
+    });
+    if (!res.ok) throw new Error('Failed to update policy');
+    return res.json();
+}
+
+export async function deletePolicy(id: string): Promise<void> {
+    const res = await fetch(`/api/rebac/policies/${id}`, {
+        method: 'DELETE'
+    });
+    if (!res.ok) throw new Error('Failed to delete policy');
 }

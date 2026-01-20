@@ -3,9 +3,14 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Activity, Clock, LogOut, RefreshCw, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SystemStatusLayout } from '@/components/layout/SystemStatusLayout'
 
 export const Route = createFileRoute('/stats/sessions')({
-  component: SessionsStats,
+  component: () => (
+    <SystemStatusLayout>
+      <SessionsStats />
+    </SystemStatusLayout>
+  ),
 })
 
 type StatsResponse = {

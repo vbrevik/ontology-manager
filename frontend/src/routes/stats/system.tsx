@@ -3,9 +3,14 @@ import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ShieldCheck, Server, Database, Cpu, HardDrive, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SystemStatusLayout } from '@/components/layout/SystemStatusLayout'
 
 export const Route = createFileRoute('/stats/system')({
-    component: SystemStatus,
+    component: () => (
+        <SystemStatusLayout>
+            <SystemStatus />
+        </SystemStatusLayout>
+    ),
 })
 
 type SystemMetricsResponse = {
