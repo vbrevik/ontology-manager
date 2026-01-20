@@ -4,7 +4,7 @@
 
 - **backend API**: `5300` (Axum server; `backend/src/main.rs` binds to this port)
 - **frontend (vite)**: `5373` (set in `frontend/vite.config.ts`)
-- **databases (docker)**: internal only (no host port exposed)
+- **databases (docker)**: `5301-5310` (reserved range for docker-based database services)
 - **ollama (llm)**: `11434` (Ollama API exposed by `llm` service)
 - **backup agent**: no external port (internal service)
 
@@ -15,7 +15,7 @@
   - `backend` container: maps host `5300:5300` (container listens on 5300)
   - `frontend` container: maps host `5373:5373`
   - `llm` container: maps host `11434:11434`
-- Database containers are not exposed; use `docker compose exec db psql` for access.
+  - Database containers should use ports in the `5301-5310` range
 - The backend service uses the `db` container and reads the password from `DB_PASSWORD_FILE=/run/secrets/db_password`, plus `DB_HOST/DB_PORT/DB_USER/DB_NAME`.
 - Local secret file: `./secrets/db_password.txt` (not committed).
 - For Mac M1/M2 (Apple Silicon) ensure Docker Desktop Buildx is enabled for multi-arch builds; the `backend/Dockerfile` is a multi-stage build but may require additional tweaks for cross-architecture images.
