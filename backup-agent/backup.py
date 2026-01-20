@@ -8,6 +8,7 @@ import os
 import subprocess
 import hashlib
 import json
+import shutil
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import sys
@@ -17,6 +18,15 @@ class ImmutableBackupAgent:
         self.staging_dir = Path("/backups/staging")
         self.active_dir = Path("/backups/active")
         self.log_file = Path("/backups/logs/backup_audit.jsonl")
+        self.s3_bucket = os.environ.get("S3_BUCKET")
+        self.s3_prefix = os.environ.get("S3_PREFIX", "backups")
+        self.s3_object_lock_mode = os.environ.get("S3_OBJECT_LOCK_MODE", "COMPLIANCE")
+        self.s3_retention_days = int(os.environ.get("S3_OBJECT_LOCK_DAYS", "30"))
+        self.s3_required = os.environ.get("S3_REQUIRED", "false").lower() == "true"
+        self.s3_region = os.environ.get("S3_REGION") or os.environ.get("AWS_REGION")
+        self.s3_endpoint_url = os.environ.get("S3_ENDPOINT_URL")
+        self.s3_storage_class = os.environ.get("S3_STORAGE_CLASS")
+        self.s3_kms_key_id = os.environ.get("S3_KMS_KEY_ID")
         
         # Ensure directories exist
         self.staging_dir.mkdir(parents=True, exist_ok=True)
@@ -87,6 +97,20 @@ class ImmutableBackupAgent:
                 print("     ✅ All files made immutable")
             else:
                 print(f"     ⚠️  Immutability not supported, using strict permissions")
+
+            # Step 6b: Upload to immutable object storage (optional)
+            if self._s3_enabled():
+                print("  ☁️  Uploading to immutable object storage...")
+                retention_until = self._s3_retention_until()
+                s3_result = self._upload_backup_set_to_s3(
+                    backup_type,
+                    filename,
+                    backup_path,
+                    checksum_path,
+                    manifest_path,
+                    retention_until,
+                )
+                manifest["object_lock"] = s3_result
             
             # Step 7: Log to audit trail
             self._log_backup(manifest)
@@ -213,7 +237,7 @@ class ImmutableBackupAgent:
             "weekly": 28   # Keep 4 weeks
         }
         
-        max_age_days = retention_days.get(backup_type, 7)
+        max_age_days = self._retention_days_for_type(backup_type, retention_days)
         cutoff = datetime.now(timezone.utc) - timedelta(days=max_age_days)
         cutoff_timestamp = cutoff.timestamp()
         
@@ -258,6 +282,100 @@ class ImmutableBackupAgent:
                     print(f"  ⚠️  Failed to cleanup {backup_file}: {e}")
         
         return removed_count
+
+    def _retention_days_for_type(self, backup_type, defaults):
+        env_key = f"BACKUP_RETENTION_{backup_type.upper()}_DAYS"
+        if env_key in os.environ:
+            return int(os.environ[env_key])
+        if "BACKUP_RETENTION_DAYS" in os.environ:
+            return int(os.environ["BACKUP_RETENTION_DAYS"])
+        return defaults.get(backup_type, 7)
+
+    def _s3_enabled(self):
+        if self.s3_required and not self.s3_bucket:
+            raise Exception("S3_REQUIRED is true but S3_BUCKET is not set")
+        return self.s3_bucket is not None and self.s3_bucket != ""
+
+    def _s3_retention_until(self):
+        retention_until = datetime.now(timezone.utc) + timedelta(days=self.s3_retention_days)
+        return retention_until.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    def _upload_backup_set_to_s3(
+        self,
+        backup_type,
+        filename,
+        backup_path,
+        checksum_path,
+        manifest_path,
+        retention_until,
+    ):
+        if not shutil.which("aws"):
+            message = "aws-cli is required for S3 uploads but was not found"
+            if self.s3_required:
+                raise Exception(message)
+            return {
+                "enabled": False,
+                "error": message,
+            }
+
+        prefix = f"{self.s3_prefix.rstrip('/')}/{backup_type}/{filename}"
+        objects = {
+            "backup": (backup_path, prefix),
+            "checksum": (checksum_path, f"{prefix}.sha256"),
+            "manifest": (manifest_path, f"{prefix}.manifest.json"),
+        }
+
+        for label, (path, key) in objects.items():
+            self._upload_to_s3(path, key, retention_until)
+
+        return {
+            "enabled": True,
+            "bucket": self.s3_bucket,
+            "prefix": f"{self.s3_prefix.rstrip('/')}/{backup_type}",
+            "object_lock_mode": self.s3_object_lock_mode,
+            "retention_until": retention_until,
+            "objects": {
+                "backup": objects["backup"][1],
+                "checksum": objects["checksum"][1],
+                "manifest": objects["manifest"][1],
+            },
+        }
+
+    def _upload_to_s3(self, file_path, object_key, retention_until):
+        cmd = [
+            "aws",
+            "s3api",
+            "put-object",
+            "--bucket",
+            self.s3_bucket,
+            "--key",
+            object_key,
+            "--body",
+            str(file_path),
+            "--object-lock-mode",
+            self.s3_object_lock_mode,
+            "--object-lock-retain-until-date",
+            retention_until,
+        ]
+
+        if self.s3_storage_class:
+            cmd.extend(["--storage-class", self.s3_storage_class])
+
+        if self.s3_kms_key_id:
+            cmd.extend(["--server-side-encryption", "aws:kms", "--ssekms-key-id", self.s3_kms_key_id])
+
+        if self.s3_region:
+            cmd.extend(["--region", self.s3_region])
+
+        if self.s3_endpoint_url:
+            cmd.extend(["--endpoint-url", self.s3_endpoint_url])
+
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            message = result.stderr.strip() or "unknown aws-cli error"
+            if self.s3_required:
+                raise Exception(f"S3 upload failed: {message}")
+            print(f"  ⚠️  S3 upload failed: {message}")
 
 def main():
     """Main entry point"""
