@@ -1,27 +1,34 @@
-Now I have all the context needed. Let me produce the section content.
-
 # Section 06: Full Test Suite
+
+## Status: IMPLEMENTED
 
 ## Overview
 
-This section covers the complete test suite for the import engine feature. It depends on all prior sections (01 through 05) being implemented. Tests are organized into five categories: migration verification, adapter unit tests, validation unit tests, service integration tests, and error case tests.
+Complete test suite for the import engine. Unit tests (31) in inline `#[cfg(test)]` modules, integration tests (8) in dedicated test file.
 
-All integration tests use the `#[sqlx::test]` attribute, which provides a clean database via migrations for each test. Unit tests (adapters, validation) use `tempfile::TempDir` and do not require a database.
+## Files Created
 
-## Prerequisites
+- `backend/tests/import_engine_test.rs` — 8 sqlx::test integration tests
 
-- **Section 01** (migration) must be applied so `is_system` column and `source_conflicts` table exist
-- **Section 02** (models) provides `ParsedOntology`, `ParsedClass`, `ParsedProperty`, `ParsedRelationshipType`, `ImportResult`, `ImportStats`, `ConflictEntry`, `UnloadResult`, `ImportError`
-- **Section 03** (adapters) provides `JsonAdapter`, `SchemaAdapter`, and the validation/topological-sort functions
-- **Section 04** (service) provides `ImportService` with `import` and `unload` methods
-- **Section 05** (routes/integration) provides route registration and `TestServices` updates
+## Test Summary
 
-## File Locations
+| Category | Count | Location |
+|----------|-------|----------|
+| Model unit tests | 15 | `import_engine/models.rs` |
+| JSON adapter tests | 6 | `adapters/json_adapter.rs` |
+| Schema adapter tests | 5 | `adapters/schema_adapter.rs` |
+| Validation tests | 5 | `adapters/mod.rs` |
+| Migration verification | 4 | `import_engine_test.rs` |
+| Service integration | 4 | `import_engine_test.rs` |
+| **Total** | **39** | |
 
-- **Integration test file:** `/Users/vidarbrevik/projects/ontology-manager/backend/tests/import_engine_test.rs`
-- **Unit tests (adapters):** inline `#[cfg(test)]` modules in `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/adapters/json_adapter.rs` and `schema_adapter.rs`
-- **Unit tests (validation):** inline `#[cfg(test)]` module in `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/adapters/mod.rs` (or wherever the validation/topological sort functions live)
-- **TestServices update:** `/Users/vidarbrevik/projects/ontology-manager/backend/tests/common/mod.rs`
+## Integration Tests (require DATABASE_URL)
+
+- test_is_system_column_exists, test_is_system_defaults_false
+- test_source_conflicts_table_created, test_source_conflicts_columns
+- test_import_json_source, test_import_then_unload
+- test_clean_swap_reimport, test_import_sets_flags_atomically
+- test_import_nonexistent_source, test_extension_without_base
 
 ## TestServices Update
 
