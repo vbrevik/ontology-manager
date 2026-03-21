@@ -1,0 +1,52 @@
+{
+  "plugin_root": "/Users/vidarbrevik/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/requirements/01-source-discovery-api/sections",
+  "target_dir": "/Users/vidarbrevik/projects/ontology-manager",
+  "state_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/requirements/01-source-discovery-api/implementation",
+  "git_root": "/Users/vidarbrevik/projects/ontology-manager",
+  "commit_style": "conventional",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-migration",
+    "section-02-models",
+    "section-03-service",
+    "section-04-routes",
+    "section-05-config-integration",
+    "section-06-tests"
+  ],
+  "sections_state": {
+    "section-01-migration": {
+      "status": "complete",
+      "commit_hash": "8f5890a"
+    },
+    "section-02-models": {
+      "status": "complete",
+      "commit_hash": "d994582"
+    },
+    "section-03-service": {
+      "status": "complete",
+      "commit_hash": "be61c61"
+    },
+    "section-04-routes": {
+      "status": "complete",
+      "commit_hash": "c38c091"
+    },
+    "section-05-config-integration": {
+      "status": "complete",
+      "commit_hash": "8a1a3a7"
+    },
+    "section-06-tests": {
+      "status": "complete",
+      "commit_hash": "8df2240"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-21T14:51:48.904222+00:00"
+}
