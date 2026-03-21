@@ -1,22 +1,27 @@
-I have all the information needed. Let me write the section content.
-
 # Section 05: Routes and Integration
+
+## Status: IMPLEMENTED
 
 ## Overview
 
-This section covers the final wiring of the import engine into the application: the Axum route handlers, the router factory function, merging with the existing ontology-sources routes in `main.rs`, registering the module in `features/mod.rs`, and updating `TestServices` in the test harness.
+Wired import engine into the application: route handlers, router factory, main.rs integration, test harness.
 
-**Dependencies:** This section assumes section-02 (models: `ImportResult`, `UnloadResult`, `ImportParams`, `ImportError`) and section-04 (service: `ImportService`) are already implemented.
+**Dependencies:** All previous sections ✅
 
-## Files to Create or Modify
+## Files Created
 
-| File | Action |
-|------|--------|
-| `backend/src/features/import_engine/routes.rs` | **Create** -- POST and DELETE handlers, router factory |
-| `backend/src/features/import_engine/mod.rs` | **Create** -- module declarations and re-exports |
-| `backend/src/features/mod.rs` | **Modify** -- add `pub mod import_engine;` |
-| `backend/src/main.rs` | **Modify** -- create `ImportService`, merge import routes under `/api/ontology-sources` |
-| `backend/tests/common/mod.rs` | **Modify** -- add `import_service` field to `TestServices`, create it in `setup_services()` |
+- `backend/src/features/import_engine/routes.rs` — POST/DELETE handlers, router factory
+
+## Files Modified
+
+- `backend/src/features/import_engine/mod.rs` — added routes module + re-exports
+- `backend/src/main.rs` — ImportService creation, merged routes under /ontology-sources
+- `backend/tests/common/mod.rs` — import_service field in TestServices
+
+## Effective Routes
+
+- `POST /api/ontology-sources/:id/import?role=base|extension` — import source
+- `DELETE /api/ontology-sources/:id/import` — unload source
 
 ## Tests
 

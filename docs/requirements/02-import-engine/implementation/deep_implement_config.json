@@ -26,6 +26,10 @@
     "section-03-adapters": {
       "status": "complete",
       "commit_hash": "153f7e6"
+    },
+    "section-04-service": {
+      "status": "complete",
+      "commit_hash": "83f9986"
     }
   },
   "pre_commit": {

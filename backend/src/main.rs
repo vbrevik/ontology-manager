@@ -152,6 +152,10 @@ async fn main() {
         pool.clone(),
         std::path::PathBuf::from(&config.ontology_data_dir),
     );
+    let import_service = features::import_engine::ImportService::new(
+        pool.clone(),
+        std::path::PathBuf::from(&config.ontology_data_dir),
+    );
 
     // MFA Service (Moved up)
     // let mfa_service = features::auth::mfa::MfaService::new(pool.clone(), "OntologyManager".to_string());
@@ -306,8 +310,15 @@ async fn main() {
         )
         .nest(
             "/ontology-sources",
-            features::ontology_sources::ontology_sources_routes()
-                .with_state(source_service)
+            Router::new()
+                .merge(
+                    features::ontology_sources::ontology_sources_routes()
+                        .with_state(source_service),
+                )
+                .merge(
+                    features::import_engine::import_engine_routes()
+                        .with_state(import_service),
+                )
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         );

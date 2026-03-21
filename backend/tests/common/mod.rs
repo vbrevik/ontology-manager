@@ -15,6 +15,7 @@ use template_repo_backend::features::{
     rebac::RebacService,
     system::AuditService,
     system::SystemService,
+    import_engine::ImportService,
     ontology_sources::OntologySourceService,
     users::service::UserService,
 };
@@ -35,6 +36,7 @@ pub struct TestServices {
     pub mfa_service: template_repo_backend::features::auth::mfa::MfaService,
     pub project_service: template_repo_backend::features::projects::ProjectService,
     pub source_service: OntologySourceService,
+    pub import_service: ImportService,
 }
 
 pub async fn setup_services(pool: PgPool) -> TestServices {
@@ -118,6 +120,12 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         std::path::PathBuf::from("./test-data"),
     );
 
+    // Import Service
+    let import_service = ImportService::new(
+        pool.clone(),
+        std::path::PathBuf::from("./test-data"),
+    );
+
     TestServices {
         auth_service,
         user_service,
@@ -133,6 +141,7 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         mfa_service,
         project_service,
         source_service,
+        import_service,
     }
 }
 
