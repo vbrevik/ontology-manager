@@ -34,6 +34,10 @@
     "section-05-routes-integration": {
       "status": "complete",
       "commit_hash": "cb2c97e"
+    },
+    "section-06-tests": {
+      "status": "complete",
+      "commit_hash": "511af13"
     }
   },
   "pre_commit": {
