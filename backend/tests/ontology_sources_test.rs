@@ -414,3 +414,20 @@ async fn test_set_active_nonexistent_source(pool: PgPool) {
 
     assert!(result.is_err(), "Setting nonexistent source should return NotFound");
 }
+
+// --- Section 06: Config and integration tests ---
+
+#[test]
+fn test_config_default_data_dir() {
+    let config = common::create_test_config();
+    assert_eq!(config.ontology_data_dir, "./test-data");
+}
+
+#[sqlx::test]
+async fn test_service_in_test_services(pool: PgPool) {
+    let services = common::setup_services(pool).await;
+    // Compile-time check that source_service field exists and is usable
+    let active = services.source_service.get_active_sources().await.unwrap();
+    assert!(active.base.is_none());
+    assert!(active.extension.is_none());
+}
