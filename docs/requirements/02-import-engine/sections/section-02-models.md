@@ -1,6 +1,6 @@
-Now I have all the context needed. Let me produce the section content.
-
 # Section 02 -- Data Models for the Import Engine
+
+## Status: IMPLEMENTED
 
 ## Overview
 
@@ -11,23 +11,33 @@ This section defines all data models for the import engine feature. These includ
 3. **File-format deserialization structs** -- serde types for reading JSON and JSON Schema source files.
 4. **`ImportParams`** -- query parameter struct for the import endpoint.
 5. **`ImportError`** -- error enum with `IntoResponse` implementation.
-6. **Updates to existing models** -- add `source_id` and `is_system` fields to existing `Class`, `Property`, and `RelationshipType` structs.
+6. **Updates to existing models** -- `ClassWithParent` updated with `source_id` and `is_system` fields. `Class`, `Property`, and `RelationshipType` already had these fields from section-01.
 
 All models live in `backend/src/features/import_engine/models.rs` except the existing model updates which modify `backend/src/features/ontology/models.rs`.
 
 ## Dependencies
 
-- **section-01-migration** must be complete first (the `is_system` column on `classes` and `source_id` columns must exist in the database for `FromRow` to work after struct updates).
+- **section-01-migration** ✅ complete
 
-## Files to Create
+## Files Created
 
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/mod.rs`
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/models.rs`
+- `backend/src/features/import_engine/mod.rs`
+- `backend/src/features/import_engine/models.rs`
 
-## Files to Modify
+## Files Modified
 
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/ontology/models.rs` -- add `source_id` and `is_system` to `Class`, add `source_id` to `Property` and `RelationshipType`
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/mod.rs` -- add `pub mod import_engine;`
+- `backend/src/features/ontology/models.rs` -- added `source_id` and `is_system` to `ClassWithParent`
+- `backend/src/features/ontology/service.rs` -- updated `list_classes` SQL query to include `source_id`, `is_system`
+- `backend/src/features/mod.rs` -- added `pub mod import_engine;`
+- `backend/Cargo.toml` -- added `serde_urlencoded` dev-dependency for tests
+
+## Deviations from Plan
+
+- `Class`, `Property`, `RelationshipType` already had `source_id`/`is_system` from section-01 — no changes needed
+- `ClassWithParent` required updating (not mentioned in original plan but needed for `FromRow` compatibility)
+- `list_classes` SQL query in `ontology/service.rs` needed updating to select the new columns
+- `ImportError::IntoResponse` sanitizes 500-class error messages to avoid leaking internals (code review fix)
+- 15 tests total (plan specified 13; added 2 extra for `ImportParams` deserialization coverage)
 
 ---
 

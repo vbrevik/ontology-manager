@@ -77,6 +77,8 @@ pub struct ClassWithParent {
     pub is_abstract: bool,
     pub is_deprecated: bool,
     pub created_at: DateTime<Utc>,
+    pub source_id: Option<String>,
+    pub is_system: bool,
 }
 
 #[derive(Debug, Deserialize)]

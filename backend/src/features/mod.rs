@@ -5,6 +5,7 @@ pub mod auth;
 pub mod dashboard;
 pub mod discovery;
 pub mod firefighter;
+pub mod import_engine;
 pub mod navigation;
 pub mod ontology;
 pub mod ontology_sources;
