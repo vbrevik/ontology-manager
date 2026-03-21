@@ -1,19 +1,34 @@
-Now I have sufficient context. Let me generate the section content.
-
 # Section 04: ImportService -- Core Import Orchestration
+
+## Status: IMPLEMENTED
 
 ## Overview
 
-This section implements `ImportService`, the central service struct that orchestrates the entire import workflow: resolving a source from the database, dispatching to the appropriate format adapter, validating parsed data, executing a clean-swap transaction (delete old data, insert new data in topological order), running conflict detection for extensions, and updating source flags. It also implements the unload (delete) logic.
+ImportService orchestrates the entire import workflow: resolve source, dispatch to adapter, validate, clean-swap transaction, conflict detection for extensions, flag management. Also implements unload.
 
-**File to create:** `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/service.rs`
+**File created:** `backend/src/features/import_engine/service.rs`
 
 ## Dependencies
 
-- **section-02-models** provides: `ParsedOntology`, `ParsedClass`, `ParsedProperty`, `ParsedRelationshipType`, `ImportResult`, `ImportStats`, `ConflictEntry`, `UnloadResult`, `ImportError`, `ImportParams`
-- **section-03-adapters** provides: adapter dispatch function that takes a source format string and file paths and returns `Result<ParsedOntology, ImportError>`, plus validation functions (duplicate class names, orphan refs, cycle detection / topological sort)
-- **section-01-migration** provides: `is_system` column on `classes`, `source_conflicts` table, `source_id` column on `classes`/`properties`/`relationship_types`
-- Existing codebase: `OntologySource` from `features/ontology_sources/models.rs`, `SourceManifest` from same module, `OntologyVersion` from `features/ontology/models.rs`
+- section-01-migration ✅
+- section-02-models ✅
+- section-03-adapters ✅
+
+## Files Created
+
+- `backend/src/features/import_engine/service.rs`
+
+## Files Modified
+
+- `backend/src/features/import_engine/mod.rs` — added `pub mod service;` and `pub use service::ImportService;`
+
+## Deviations from Plan
+
+- **Cross-source class resolution**: Added DB fallback for parent_class_id and relationship type class refs when referencing classes from other sources (not just local batch)
+- **Previous role holder cleanup**: Before clearing is_base/is_extension flags, the previous holder's data is fully deleted to prevent orphan rows
+- **imported_at from DB**: Uses `RETURNING imported_at` from PostgreSQL instead of application-level `Utc::now()` for timestamp consistency
+- **resolve_class_id helper**: Extracted reusable function for name→UUID resolution with local map + DB fallback
+- Integration tests deferred to section-06
 
 ## Tests (Write First)
 
