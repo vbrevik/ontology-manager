@@ -3231,6 +3231,7 @@ dependencies = [
  "sha2",
  "sqlx",
  "sysinfo",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",

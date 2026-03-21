@@ -294,15 +294,26 @@ impl ProjectService {
             .await
             .map_err(|e| ProjectError::OntologyError(e.to_string()))?;
 
+        // Get all entities the user can read
+        let accessible_ids: Vec<Uuid> = self.rebac_service.get_accessible_entities(user_id, "project.read")
+            .await
+            .map_err(|e| ProjectError::OntologyError(e.to_string()))?
+            .into_iter()
+            .map(|e| e.entity_id)
+            .collect();
+
+        // Filter sub-projects to only those the user can access
         let projects = sqlx::query_as::<_, Project>(
-            "SELECT * FROM unified_projects WHERE parent_project_id = $1 ORDER BY created_at ASC"
+            "SELECT * FROM unified_projects WHERE parent_project_id = $1 AND id = ANY($2) ORDER BY created_at ASC"
         )
         .bind(parent_id)
+        .bind(&accessible_ids)
         .fetch_all(&self.pool)
         .await?;
 
         Ok(projects)
     }
+
 
 
     // ========================================================================
