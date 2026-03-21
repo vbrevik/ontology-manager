@@ -45,5 +45,6 @@ xOkT6FXwwZZiKamADXpik1wFJ/K5ZD27pXFusiDZbwrUcGfcguZJehRbwBRRiwZl
 FwIDAQAB
 -----END PUBLIC KEY-----"#
             .to_string(),
+        ontology_data_dir: "./test-data".to_string(),
     }
 }

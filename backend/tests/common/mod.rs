@@ -1,10 +1,22 @@
+use axum::Router;
 use sqlx::PgPool;
+use std::sync::Arc;
 use template_repo_backend::config::Config;
+use uuid::Uuid;
 use template_repo_backend::features::{
-    abac::AbacService, ai::service::AiService, api_management::service::ApiManagementService,
-    auth::service::AuthService, firefighter::service::FirefighterService,
-    ontology::OntologyService, rate_limit::service::RateLimitService, rebac::RebacService,
-    system::AuditService, system::SystemService, users::service::UserService,
+    abac::AbacService,
+    ai::service::AiService,
+    api_management::service::ApiManagementService,
+    auth::models::User,
+    auth::service::AuthService,
+    firefighter::service::FirefighterService,
+    ontology::OntologyService,
+    rate_limit::service::RateLimitService,
+    rebac::RebacService,
+    system::AuditService,
+    system::SystemService,
+    ontology_sources::OntologySourceService,
+    users::service::UserService,
 };
 
 #[allow(dead_code)]
@@ -22,6 +34,7 @@ pub struct TestServices {
     pub system_service: SystemService,
     pub mfa_service: template_repo_backend::features::auth::mfa::MfaService,
     pub project_service: template_repo_backend::features::projects::ProjectService,
+    pub source_service: OntologySourceService,
 }
 
 pub async fn setup_services(pool: PgPool) -> TestServices {
@@ -79,8 +92,8 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
     // API Management Service
     let api_management_service = ApiManagementService::new(pool.clone());
 
-    // Rate Limit Service
-    let rate_limit_service = RateLimitService::new(pool.clone(), true); // test_mode = true
+    // Rate Limit Service (test_mode = false to test actual rate limiting)
+    let rate_limit_service = RateLimitService::new(pool.clone(), false);
 
     // Firefighter Service
     let firefighter_service = FirefighterService::new(
@@ -99,6 +112,12 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         rebac_service.clone(),
     );
 
+    // Ontology Source Service
+    let source_service = OntologySourceService::new(
+        pool.clone(),
+        std::path::PathBuf::from("./test-data"),
+    );
+
     TestServices {
         auth_service,
         user_service,
@@ -113,6 +132,7 @@ pub async fn setup_services(pool: PgPool) -> TestServices {
         system_service,
         mfa_service,
         project_service,
+        source_service,
     }
 }
 
@@ -161,5 +181,117 @@ xOkT6FXwwZZiKamADXpik1wFJ/K5ZD27pXFusiDZbwrUcGfcguZJehRbwBRRiwZl
 FwIDAQAB
 -----END PUBLIC KEY-----"#
             .to_string(),
+        ontology_data_dir: "./test-data".to_string(),
     }
+}
+
+/// Create a test user for integration tests
+#[allow(dead_code)]
+pub async fn create_test_user(
+    services: &TestServices,
+    username: &str,
+    email: &str,
+    password: &str,
+) -> User {
+    services
+        .user_service
+        .create(username, email, password, None)
+        .await
+        .expect("Failed to create test user")
+}
+
+/// Seed CVE-004 rate limit rules for testing
+#[allow(dead_code)]
+pub async fn seed_cve004_rate_limit_rules(pool: &PgPool) {
+    // Get RateLimitRule class ID
+    let class_id: Option<Uuid> = sqlx::query_scalar(
+        "SELECT id FROM classes WHERE name = 'RateLimitRule' LIMIT 1"
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    let class_id = match class_id {
+        Some(id) => id,
+        None => {
+            // RateLimitRule class doesn't exist, skip seeding
+            eprintln!("Warning: RateLimitRule class not found, skipping rule seeding");
+            return;
+        }
+    };
+
+    let rules = vec![
+        ("auth-login", "Login Rate Limit", 5, 15 * 60),
+        ("auth-mfa-challenge", "MFA Challenge Rate Limit", 10, 5 * 60),
+        ("auth-forgot-password", "Password Reset Rate Limit", 3, 60 * 60),
+        ("auth-register", "Registration Rate Limit", 3, 60 * 60),
+    ];
+
+    for (rule_id, name, max_requests, window_seconds) in rules {
+        let _ = sqlx::query(
+            r#"
+            INSERT INTO entities (id, class_id, display_name, attributes, approval_status)
+            VALUES ($1, $2, $3, $4, 'APPROVED'::approval_status)
+            ON CONFLICT (id) DO UPDATE
+            SET attributes = $4
+            "#
+        )
+        .bind(Uuid::parse_str(rule_id).unwrap_or_else(|_| Uuid::new_v4()))
+        .bind(class_id)
+        .bind(name)
+        .bind(serde_json::json!({
+            "name": name,
+            "endpoint_pattern": format!("/api/auth/{}", rule_id.replace("auth-", "")),
+            "max_requests": max_requests,
+            "window_seconds": window_seconds,
+            "strategy": "IP",
+            "enabled": true
+        }))
+        .execute(pool)
+        .await;
+    }
+}
+
+/// Set up a full test app with all routes and middleware
+#[allow(dead_code)]
+pub async fn setup_test_app(pool: PgPool) -> Router {
+    use template_repo_backend::features;
+    use template_repo_backend::middleware;
+
+    let services = setup_services(pool.clone()).await;
+
+    let mfa_state = features::auth::routes::MfaState {
+        mfa_service: services.mfa_service.clone(),
+        auth_service: services.auth_service.clone(),
+    };
+
+    // Build minimal router with auth routes and rate limiting
+    Router::new()
+        .nest(
+            "/api/auth",
+            Router::new()
+                .merge(features::auth::routes::public_auth_routes())
+                .merge(
+                    features::auth::routes::protected_auth_routes()
+                        .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                        .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
+                )
+                .layer(axum::middleware::from_fn_with_state(
+                    Arc::new(services.rate_limit_service.clone()),
+                    features::rate_limit::middleware::rate_limit_middleware,
+                )),
+        )
+        .nest(
+            "/api/auth/mfa",
+            features::auth::routes::mfa_routes()
+                .with_state(mfa_state)
+                .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf))
+                .layer(axum::middleware::from_fn_with_state(
+                    Arc::new(services.rate_limit_service.clone()),
+                    features::rate_limit::middleware::rate_limit_middleware,
+                )),
+        )
+        .with_state(services.auth_service.clone())
 }
