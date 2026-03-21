@@ -24,6 +24,12 @@ data/emails.log
 data/mpcg-ontology
 data/system-ontology
 
+# Editor/IDE
+.cursor/
+
+# Build artifacts
+*.profraw
+
 # Backup data (local only)
 external_storage/
 backup-agent/*.log
