@@ -11,7 +11,21 @@ echo "📋 Configuration:"
 echo "   Database:  ${DB_HOST}:${DB_PORT}/${DB_NAME}"
 echo "   User:      ${DB_USER}"
 echo "   Schedule:  ${BACKUP_SCHEDULE}"
-echo "   Retention: ${BACKUP_RETENTION_DAYS} days"
+echo "   Retention: ${BACKUP_RETENTION_DAYS} days (default)"
+if [ -n "${BACKUP_RETENTION_HOURLY_DAYS}" ]; then
+  echo "   Retention (hourly): ${BACKUP_RETENTION_HOURLY_DAYS} days"
+fi
+if [ -n "${BACKUP_RETENTION_DAILY_DAYS}" ]; then
+  echo "   Retention (daily): ${BACKUP_RETENTION_DAILY_DAYS} days"
+fi
+if [ -n "${BACKUP_RETENTION_WEEKLY_DAYS}" ]; then
+  echo "   Retention (weekly): ${BACKUP_RETENTION_WEEKLY_DAYS} days"
+fi
+if [ -n "${S3_BUCKET}" ]; then
+  echo "   S3 Bucket: ${S3_BUCKET}"
+  echo "   S3 Prefix: ${S3_PREFIX}"
+  echo "   S3 Object Lock: ${S3_OBJECT_LOCK_MODE} (${S3_OBJECT_LOCK_DAYS} days)"
+fi
 echo ""
 
 # Create cron jobs
@@ -37,7 +51,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    PGPASSWORD=$(cat /run/secrets/db_password) pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} > /dev/null 2>&1
+    PGPASSWORD=$(cat ${DB_PASSWORD_FILE:-/run/secrets/db_password}) pg_isready -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} > /dev/null 2>&1
     if [ $? -eq 0 ]; then
         echo "   ✅ Database is ready"
         break
