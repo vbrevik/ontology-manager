@@ -18,6 +18,10 @@
     "section-01-migration": {
       "status": "complete",
       "commit_hash": "ac5b935"
+    },
+    "section-02-models": {
+      "status": "complete",
+      "commit_hash": "66bde14"
     }
   },
   "pre_commit": {

@@ -1,22 +1,33 @@
-Now I have all the context I need. Let me generate the section content.
-
 # Section 03: Format Adapters
+
+## Status: IMPLEMENTED
 
 ## Overview
 
-This section implements two format adapters and a common dispatch mechanism for reading ontology data from source directories. The adapters convert source-specific file formats into a common intermediate representation (`ParsedOntology`). Pre-parse validation (orphan references, duplicate names, cycle detection) is also covered here.
+This section implements two format adapters and a common dispatch mechanism for reading ontology data from source directories. The adapters convert source-specific file formats into a common intermediate representation (`ParsedOntology`). Validation (orphan references, duplicate names, cycle detection) is also covered here.
 
 **Dependencies:**
-- Section 01 (migration): The `source_id` and `is_system` columns must exist in the database
-- Section 02 (models): The `ParsedOntology`, `ParsedClass`, `ParsedProperty`, `ParsedRelationshipType` structs, `ImportError` enum, and file-format deserialization structs must be defined
+- Section 01 (migration): ✅ complete
+- Section 02 (models): ✅ complete
 
 **Blocks:** Section 04 (service), Section 06 (tests)
 
-## Files to Create
+## Files Created
 
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/adapters/mod.rs`
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/adapters/json_adapter.rs`
-- `/Users/vidarbrevik/projects/ontology-manager/backend/src/features/import_engine/adapters/schema_adapter.rs`
+- `backend/src/features/import_engine/adapters/mod.rs` — dispatch + validation + topological sort
+- `backend/src/features/import_engine/adapters/json_adapter.rs` — system-ontology JSON format
+- `backend/src/features/import_engine/adapters/schema_adapter.rs` — MPCG taxonomy + JSON Schema format
+
+## Files Modified
+
+- `backend/src/features/import_engine/mod.rs` — added `pub mod adapters;`
+
+## Deviations from Plan
+
+- **Renamed `validate_parsed` → `validate_and_sort`**: Returns sorted `ParsedOntology` instead of `()`, avoiding duplicate sort calls
+- **Error accumulation**: Validation collects all errors (duplicates, orphan refs) and returns them joined, rather than failing on first error
+- **Added orphan parent class validation**: Classes referencing non-existent parent names are now caught
+- **16 adapter tests + 15 model tests = 31 total passing**
 
 ## Tests First
 
