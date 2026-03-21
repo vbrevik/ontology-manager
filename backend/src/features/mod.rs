@@ -7,6 +7,7 @@ pub mod discovery;
 pub mod firefighter;
 pub mod navigation;
 pub mod ontology;
+pub mod ontology_sources;
 pub mod projects;
 pub mod rate_limit;
 pub mod rebac;

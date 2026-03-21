@@ -1,4 +1,8 @@
 use sqlx::PgPool;
+use std::path::PathBuf;
+use template_repo_backend::features::ontology_sources::{
+    OntologySourceService, SetActiveInput,
+};
 
 mod common;
 
@@ -207,4 +211,206 @@ async fn test_properties_unique_constraint_updated(pool: PgPool) {
         .await;
 
     assert!(result.is_ok(), "Same property name from different sources should be allowed");
+}
+
+// --- Section 03: Service integration tests ---
+
+/// Helper to insert a source row directly for service tests
+async fn insert_source(pool: &PgPool, source_id: &str, name: &str) {
+    sqlx::query(
+        "INSERT INTO ontology_sources (source_id, name, format, path) VALUES ($1, $2, 'json', '/tmp/test')",
+    )
+    .bind(source_id)
+    .bind(name)
+    .execute(pool)
+    .await
+    .unwrap();
+}
+
+#[sqlx::test]
+async fn test_set_base_source(pool: PgPool) {
+    insert_source(&pool, "src-1", "Source One").await;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+    svc.set_active_sources(SetActiveInput {
+        base: Some("src-1".to_string()),
+        extension: None,
+    })
+    .await
+    .unwrap();
+
+    let active = svc.get_active_sources().await.unwrap();
+    assert!(active.base.is_some());
+    assert_eq!(active.base.unwrap().id, "src-1");
+    assert!(active.extension.is_none());
+}
+
+#[sqlx::test]
+async fn test_set_base_clears_previous(pool: PgPool) {
+    insert_source(&pool, "src-1", "Source One").await;
+    insert_source(&pool, "src-2", "Source Two").await;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+
+    svc.set_active_sources(SetActiveInput {
+        base: Some("src-1".to_string()),
+        extension: None,
+    })
+    .await
+    .unwrap();
+
+    svc.set_active_sources(SetActiveInput {
+        base: Some("src-2".to_string()),
+        extension: None,
+    })
+    .await
+    .unwrap();
+
+    let active = svc.get_active_sources().await.unwrap();
+    assert_eq!(active.base.unwrap().id, "src-2");
+}
+
+#[sqlx::test]
+async fn test_set_extension(pool: PgPool) {
+    insert_source(&pool, "src-1", "Base").await;
+    insert_source(&pool, "src-2", "Extension").await;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+    svc.set_active_sources(SetActiveInput {
+        base: Some("src-1".to_string()),
+        extension: Some("src-2".to_string()),
+    })
+    .await
+    .unwrap();
+
+    let active = svc.get_active_sources().await.unwrap();
+    assert_eq!(active.base.as_ref().unwrap().id, "src-1");
+    assert!(active.base.as_ref().unwrap().is_base);
+    assert_eq!(active.extension.as_ref().unwrap().id, "src-2");
+    assert!(active.extension.as_ref().unwrap().is_extension);
+}
+
+#[sqlx::test]
+async fn test_set_base_null_clears(pool: PgPool) {
+    insert_source(&pool, "src-1", "Source One").await;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+
+    svc.set_active_sources(SetActiveInput {
+        base: Some("src-1".to_string()),
+        extension: None,
+    })
+    .await
+    .unwrap();
+
+    svc.set_active_sources(SetActiveInput {
+        base: None,
+        extension: None,
+    })
+    .await
+    .unwrap();
+
+    let active = svc.get_active_sources().await.unwrap();
+    assert!(active.base.is_none());
+    assert!(active.extension.is_none());
+}
+
+#[sqlx::test]
+async fn test_get_active_empty(pool: PgPool) {
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+    let active = svc.get_active_sources().await.unwrap();
+    assert!(active.base.is_none());
+    assert!(active.extension.is_none());
+}
+
+#[sqlx::test]
+async fn test_sync_sources_upsert(pool: PgPool) {
+    use template_repo_backend::features::ontology_sources::service::DiscoveredSource;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+
+    let sources = vec![
+        DiscoveredSource {
+            source_id: "upsert-1".to_string(),
+            name: "First".to_string(),
+            description: Some("First source".to_string()),
+            version: Some("1.0.0".to_string()),
+            format: "json".to_string(),
+            domain: None,
+            path: "/tmp/first".to_string(),
+            stats: None,
+            available: true,
+        },
+        DiscoveredSource {
+            source_id: "upsert-2".to_string(),
+            name: "Second".to_string(),
+            description: None,
+            version: None,
+            format: "json-schema".to_string(),
+            domain: Some("military".to_string()),
+            path: "/tmp/second".to_string(),
+            stats: None,
+            available: true,
+        },
+    ];
+
+    // First sync
+    svc.sync_sources_to_db(&sources).await.unwrap();
+
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM ontology_sources WHERE source_id IN ('upsert-1', 'upsert-2')")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 2);
+
+    // Second sync — should upsert, not duplicate
+    svc.sync_sources_to_db(&sources).await.unwrap();
+
+    let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM ontology_sources WHERE source_id IN ('upsert-1', 'upsert-2')")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 2, "Re-sync should not create duplicates");
+
+    // Verify updated_at was refreshed on second sync
+    let row: (chrono::DateTime<chrono::Utc>,) = sqlx::query_as(
+        "SELECT updated_at FROM ontology_sources WHERE source_id = 'upsert-1'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    // updated_at should be recent (within last 5 seconds)
+    let now = chrono::Utc::now();
+    assert!(
+        (now - row.0).num_seconds() < 5,
+        "updated_at should be refreshed on re-sync"
+    );
+}
+
+#[sqlx::test]
+async fn test_set_same_source_as_base_and_extension(pool: PgPool) {
+    insert_source(&pool, "src-1", "Source One").await;
+
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+    let result = svc
+        .set_active_sources(SetActiveInput {
+            base: Some("src-1".to_string()),
+            extension: Some("src-1".to_string()),
+        })
+        .await;
+
+    assert!(result.is_err(), "Same source as both base and extension should be rejected");
+}
+
+#[sqlx::test]
+async fn test_set_active_nonexistent_source(pool: PgPool) {
+    let svc = OntologySourceService::new(pool.clone(), PathBuf::from("/tmp"));
+    let result = svc
+        .set_active_sources(SetActiveInput {
+            base: Some("nonexistent".to_string()),
+            extension: None,
+        })
+        .await;
+
+    assert!(result.is_err(), "Setting nonexistent source should return NotFound");
 }
