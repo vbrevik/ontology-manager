@@ -1,0 +1,17 @@
+# Security Phase 2 Scope (Local)
+
+Date: 2026-01-18
+
+## In scope
+- Secrets management wiring (Docker secrets + backend config fallback).
+- Network segmentation adjustments in `docker-compose.yml`.
+- Update `docs/ports.md` to reflect secret-based DB config.
+- Local backup copies of edited files (stored in `docs/archive/`).
+
+## Not in scope
+- No new services or ports.
+- No schema or migration changes.
+- No frontend UI changes.
+- No monitoring/analytics refactors.
+- No Playwright test additions in this pass.
+- No external file transfer or remote backups (local copies only).

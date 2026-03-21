@@ -1,0 +1,112 @@
+version: "3.9"
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "5300:5300"
+    volumes:
+      - backend_data:/app/data
+    environment:
+      - RUST_LOG=info
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=app
+      - DB_NAME=app_db
+      - AI_SERVICE_URL=http://llm:11434/v1
+      - AI_MODEL=llama3
+      - AI_PREFER_ENV=true
+    depends_on:
+      - db
+    networks:
+      - frontend_net  # Can receive requests from frontend
+      - backend_net   # Can communicate with backend services
+    secrets:
+      - db_password
+
+  db:
+    build:
+      context: ./database
+    ports:
+      - "5301:5432"  # Expose for tests (TODO: restrict in production)
+    environment:
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+      - POSTGRES_DB=app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data_net  # ONLY on data network (isolated, no internet access)
+      - backend_net  # Also on backend network for service communication
+    secrets:
+      - db_password
+
+  backup:
+    build:
+      context: ./backup-agent
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=app
+      - DB_NAME=app_db
+      - DB_PASSWORD_FILE=/run/secrets/db_password
+      - BACKUP_SCHEDULE=0 * * * *
+      - BACKUP_RETENTION_HOURLY_DAYS=2
+      - BACKUP_RETENTION_DAILY_DAYS=7
+      - BACKUP_RETENTION_WEEKLY_DAYS=28
+      - S3_OBJECT_LOCK_MODE=COMPLIANCE
+      - S3_OBJECT_LOCK_DAYS=30
+      - S3_REQUIRED=false
+    volumes:
+      - backup_data:/backups
+    networks:
+      - backend_net
+    secrets:
+      - db_password
+
+  frontend:
+    image: node:20-bullseye
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: [ "npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5373" ]
+    ports:
+      - "5373:5373"
+    depends_on:
+      - backend
+    environment:
+      - VITE_PROXY_TARGET=http://backend:5300
+    networks:
+      - frontend_net  # Frontend tier
+
+  llm:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ~/.ollama:/root/.ollama
+    networks:
+      - backend_net  # LLM service on backend network
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+
+networks:
+  frontend_net:
+    driver: bridge
+  backend_net:
+    driver: bridge
+  data_net:
+    driver: bridge
+    internal: true  # Database network is isolated from internet
+
+volumes:
+  postgres_data:
+  backend_data:
+  backup_data:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
