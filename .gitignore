@@ -20,8 +20,9 @@ test-results/
 data/emails.log
 # Add secrets/
 
-# Ontology data (symlinked from external repo)
+# Ontology data sources (symlinked from external repos, local paths)
 data/mpcg-ontology
+data/system-ontology
 
 # Backup data (local only)
 external_storage/

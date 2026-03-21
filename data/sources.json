@@ -1,0 +1,17 @@
+{
+  "description": "Available ontology data sources. Each entry points to a directory containing a manifest.json.",
+  "sources": [
+    {
+      "id": "system-ontology",
+      "path": "./system-ontology",
+      "description": "Platform system ontology — access control, identity, operations, monitoring",
+      "active": true
+    },
+    {
+      "id": "mpcg-ontology",
+      "path": "./mpcg-ontology",
+      "description": "Multi-perspective context ontology — universal context representation across domains",
+      "active": false
+    }
+  ]
+}
