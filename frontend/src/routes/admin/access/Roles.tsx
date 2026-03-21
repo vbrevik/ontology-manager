@@ -34,6 +34,10 @@ import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AccessExplorer } from '@/features/rebac/components/AccessExplorer'
+import { AccessMatrix } from '@/features/rebac/components/AccessMatrix'
+import { ImpactSimulator } from '@/features/rebac/components/ImpactSimulator'
 
 export const Route = createFileRoute('/admin/access/Roles')({
     component: RolesPage,
@@ -224,147 +228,171 @@ function RolesPage() {
                                     </Badge>
                                 </div>
                             </CardHeader>
-                            <CardContent className="p-6 space-y-8">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center">
-                                            <Settings2 className="mr-2 h-3 w-3" /> Capability Matrix
-                                        </h4>
-                                        <div className="flex items-center space-x-2">
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <Button size="sm" variant="outline" className="h-7 text-[10px]">
-                                                        <Eye className="mr-2 h-3 w-3" /> Preview Menu
-                                                    </Button>
-                                                </DialogTrigger>
-                                                <DialogContent className="sm:max-w-[400px] h-[600px] flex flex-col p-0 overflow-hidden">
-                                                    <div className="bg-muted/10 border-b p-4">
-                                                        <h3 className="font-semibold">Menu Preview</h3>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Simulating menu for role: <span className="font-bold text-foreground">{selectedRole.name}</span>
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex-1 overflow-hidden flex relative">
-                                                        {/* Mock Sidebar Container */}
-                                                        <div className="w-64 h-full border-r bg-background/50 relative">
-                                                            <div className="absolute inset-0 pointer-events-none z-10 bg-indigo-500/5" />
-                                                            <AdminSidebar previewPermissions={mappings.map(m => {
-                                                                const pt = permTypes.find(p => p.id === m.permission_type_id);
-                                                                return pt ? pt.name : '';
-                                                            })} />
-                                                        </div>
-                                                        <div className="flex-1 bg-muted/20 p-8 flex items-center justify-center text-center">
-                                                            <div>
-                                                                <LayoutDashboard className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
-                                                                <p className="text-sm text-muted-foreground">Content Area</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </DialogContent>
-                                            </Dialog>
+                            <CardContent className="p-6">
+                                <Tabs defaultValue="explorer" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-4 mb-6">
+                                        <TabsTrigger value="explorer">Entity Explorer</TabsTrigger>
+                                        <TabsTrigger value="matrix">Matrix View</TabsTrigger>
+                                        <TabsTrigger value="global">Global Matrix</TabsTrigger>
+                                        <TabsTrigger value="impact">Impact Analysis</TabsTrigger>
+                                    </TabsList>
 
-                                            <div className="relative w-48">
-                                                <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
-                                                <Input
-                                                    placeholder="Filter capabilities..."
-                                                    className="pl-7 h-7 text-[10px] bg-background/40 border-border/40"
-                                                    value={permSearch}
-                                                    onChange={e => setPermSearch(e.target.value)}
-                                                />
-                                            </div>
-                                            {selectedPermIds.size > 0 && (
-                                                <Button size="sm" className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-700" onClick={handleBulkAdd}>
-                                                    Bulk Add ({selectedPermIds.size})
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        {filteredPerms.map((type) => {
-                                            const mapping = mappings.find(m => m.permission_type_id === type.id);
-                                            const hasPerm = !!mapping;
+                                    <TabsContent value="matrix" className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center">
+                                                <Settings2 className="mr-2 h-3 w-3" /> Capability Matrix
+                                            </h4>
+                                            <div className="flex items-center space-x-2">
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button size="sm" variant="outline" className="h-7 text-[10px]">
+                                                            <Eye className="mr-2 h-3 w-3" /> Preview Menu
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent className="sm:max-w-[400px] h-[600px] flex flex-col p-0 overflow-hidden">
+                                                        <div className="bg-muted/10 border-b p-4">
+                                                            <h3 className="font-semibold">Menu Preview</h3>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Simulating menu for role: <span className="font-bold text-foreground">{selectedRole.name}</span>
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex-1 overflow-hidden flex relative">
+                                                            {/* Mock Sidebar Container */}
+                                                            <div className="w-64 h-full border-r bg-background/50 relative">
+                                                                <div className="absolute inset-0 pointer-events-none z-10 bg-indigo-500/5" />
+                                                                <AdminSidebar previewPermissions={mappings.map(m => {
+                                                                    const pt = permTypes.find(p => p.id === m.permission_type_id);
+                                                                    return pt ? pt.name : '';
+                                                                })} />
+                                                            </div>
+                                                            <div className="flex-1 bg-muted/20 p-8 flex items-center justify-center text-center">
+                                                                <div>
+                                                                    <LayoutDashboard className="h-12 w-12 text-muted-foreground/20 mx-auto mb-4" />
+                                                                    <p className="text-sm text-muted-foreground">Content Area</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </DialogContent>
+                                                </Dialog>
 
-                                            return (
-                                                <div
-                                                    key={type.id}
-                                                    className={cn(
-                                                        "group flex flex-col p-4 rounded-2xl border transition-all duration-300",
-                                                        hasPerm
-                                                            ? "bg-indigo-500/[0.03] border-indigo-500/20"
-                                                            : "bg-muted/10 border-transparent opacity-80"
-                                                    )}
-                                                >
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-start space-x-4">
-                                                            <div className="mt-1 flex items-center space-x-3">
-                                                                {!hasPerm && (
-                                                                    <Checkbox
-                                                                        checked={selectedPermIds.has(type.id)}
-                                                                        onCheckedChange={(checked) => {
-                                                                            const next = new Set(selectedPermIds);
-                                                                            if (checked) next.add(type.id);
-                                                                            else next.delete(type.id);
-                                                                            setSelectedPermIds(next);
-                                                                        }}
-                                                                    />
-                                                                )}
-                                                                <div className={cn(
-                                                                    "rounded-full p-1",
-                                                                    hasPerm ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"
-                                                                )}>
-                                                                    {hasPerm ? <ShieldCheck className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-1">
-                                                                <div className="flex items-center space-x-2">
-                                                                    <span className="font-bold text-sm tracking-tight">{type.name}</span>
-                                                                    <Badge variant="secondary" className="text-[10px] h-4 font-normal scale-90 origin-left">
-                                                                        Level {type.level}
-                                                                    </Badge>
-                                                                </div>
-                                                                <p className="text-xs text-muted-foreground max-w-md italic">
-                                                                    {type.description}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center space-x-3">
-                                                            {hasPerm && (
-                                                                <div className="flex items-center space-x-2 bg-background/50 p-1 rounded-lg border border-border/20">
-                                                                    <Label className="text-[10px] text-muted-foreground px-1 uppercase font-bold">Field</Label>
-                                                                    <Input
-                                                                        placeholder="All fields"
-                                                                        className="h-7 w-32 text-xs border-none bg-transparent focus-visible:ring-0"
-                                                                        value={fieldInput[type.id] || ''}
-                                                                        onChange={(e) => setFieldInput({ ...fieldInput, [type.id]: e.target.value })}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <Button
-                                                                size="sm"
-                                                                variant={hasPerm ? "default" : "secondary"}
-                                                                className={cn(
-                                                                    "h-8 rounded-lg text-xs font-bold transition-all",
-                                                                    hasPerm ? "bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20" : ""
-                                                                )}
-                                                                onClick={() => handleTogglePermission(type)}
-                                                            >
-                                                                {hasPerm ? "Active" : "Enable"}
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                    {hasPerm && fieldInput[type.id] && (
-                                                        <div className="mt-3 ml-12 p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 flex items-center space-x-2">
-                                                            <ShieldAlert className="h-3 w-3 text-indigo-400" />
-                                                            <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
-                                                                Constrained to field: <strong className="font-mono">{fieldInput[type.id]}</strong>
-                                                            </span>
-                                                        </div>
-                                                    )}
+                                                <div className="relative w-48">
+                                                    <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+                                                    <Input
+                                                        placeholder="Filter capabilities..."
+                                                        className="pl-7 h-7 text-[10px] bg-background/40 border-border/40"
+                                                        value={permSearch}
+                                                        onChange={e => setPermSearch(e.target.value)}
+                                                    />
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                                                {selectedPermIds.size > 0 && (
+                                                    <Button size="sm" className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-700" onClick={handleBulkAdd}>
+                                                        Bulk Add ({selectedPermIds.size})
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            {filteredPerms.map((type) => {
+                                                const mapping = mappings.find(m => m.permission_type_id === type.id);
+                                                const hasPerm = !!mapping;
+
+                                                return (
+                                                    <div
+                                                        key={type.id}
+                                                        className={cn(
+                                                            "group flex flex-col p-4 rounded-2xl border transition-all duration-300",
+                                                            hasPerm
+                                                                ? "bg-indigo-500/[0.03] border-indigo-500/20"
+                                                                : "bg-muted/10 border-transparent opacity-80"
+                                                        )}
+                                                    >
+                                                        <div className="flex items-start justify-between">
+                                                            <div className="flex items-start space-x-4">
+                                                                <div className="mt-1 flex items-center space-x-3">
+                                                                    {!hasPerm && (
+                                                                        <Checkbox
+                                                                            checked={selectedPermIds.has(type.id)}
+                                                                            onCheckedChange={(checked) => {
+                                                                                const next = new Set(selectedPermIds);
+                                                                                if (checked) next.add(type.id);
+                                                                                else next.delete(type.id);
+                                                                                setSelectedPermIds(next);
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    <div className={cn(
+                                                                        "rounded-full p-1",
+                                                                        hasPerm ? "bg-indigo-500 text-white" : "bg-muted text-muted-foreground"
+                                                                    )}>
+                                                                        {hasPerm ? <ShieldCheck className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <span className="font-bold text-sm tracking-tight">{type.name}</span>
+                                                                        <Badge variant="secondary" className="text-[10px] h-4 font-normal scale-90 origin-left">
+                                                                            Level {type.level}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    <p className="text-xs text-muted-foreground max-w-md italic">
+                                                                        {type.description}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center space-x-3">
+                                                                {hasPerm && (
+                                                                    <div className="flex items-center space-x-2 bg-background/50 p-1 rounded-lg border border-border/20">
+                                                                        <Label className="text-[10px] text-muted-foreground px-1 uppercase font-bold">Field</Label>
+                                                                        <Input
+                                                                            placeholder="All fields"
+                                                                            className="h-7 w-32 text-xs border-none bg-transparent focus-visible:ring-0"
+                                                                            value={fieldInput[type.id] || ''}
+                                                                            onChange={(e) => setFieldInput({ ...fieldInput, [type.id]: e.target.value })}
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant={hasPerm ? "default" : "secondary"}
+                                                                    className={cn(
+                                                                        "h-8 rounded-lg text-xs font-bold transition-all",
+                                                                        hasPerm ? "bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20" : ""
+                                                                    )}
+                                                                    onClick={() => handleTogglePermission(type)}
+                                                                >
+                                                                    {hasPerm ? "Active" : "Enable"}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                        {hasPerm && fieldInput[type.id] && (
+                                                            <div className="mt-3 ml-12 p-2 rounded-lg bg-indigo-500/5 border border-indigo-500/10 flex items-center space-x-2">
+                                                                <ShieldAlert className="h-3 w-3 text-indigo-400" />
+                                                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400">
+                                                                    Constrained to field: <strong className="font-mono">{fieldInput[type.id]}</strong>
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="explorer" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <AccessExplorer selectedRoleId={selectedRole.id} />
+                                    </TabsContent>
+
+                                    <TabsContent value="global" className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <AccessMatrix />
+                                    </TabsContent>
+
+                                    <TabsContent value="impact" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <ImpactSimulator
+                                            roles={roles.map(r => ({ ...r, description: r.description ?? null }))}
+                                            allPermissions={permTypes}
+                                        />
+                                    </TabsContent>
+                                </Tabs>
                             </CardContent>
                         </Card>
                     ) : (

@@ -15,9 +15,14 @@ import { Button } from "@/components/ui/button"
 import { Search, Download, RefreshCw, AlertCircle, XCircle } from 'lucide-react'
 import { fetchSystemLogs, type LogEntry } from '@/features/system/lib/api'
 import { cn } from '@/lib/utils'
+import { SystemStatusLayout } from '@/components/layout/SystemStatusLayout'
 
 export const Route = createFileRoute('/logs')({
-    component: LogsPage,
+    component: () => (
+        <SystemStatusLayout>
+            <LogsPage />
+        </SystemStatusLayout>
+    ),
 })
 
 function LogsPage() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { UserRoleAssignment, Role, Resource } from '@/features/abac/lib/api';
 import { abacApi } from '@/features/abac/lib/api';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, ShieldCheck, Box, Clock, Calendar } from 'lucide-react';
+import { Trash2, Plus, ShieldCheck, Box, Clock, Calendar, Eye } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -13,6 +13,7 @@ import {
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { TemporalRoleForm } from '@/features/rebac/components/TemporalRoleForm';
+import { AccessExplorer } from '@/features/rebac/components/AccessExplorer';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 
@@ -125,9 +126,29 @@ export function UserRolesPanel({ userId }: { userId: string }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-sm">Role Assignments</h3>
+            <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-sm">Role Assignments</h3>
+                </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 text-[10px] border-indigo-500/20 bg-indigo-500/5 text-indigo-600">
+                            <Eye className="mr-2 h-3.5 w-3.5" /> Explore Access
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-4 overflow-hidden">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <ShieldCheck className="h-5 w-5 text-indigo-600" />
+                                Effective Access Explorer
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-hidden mt-4">
+                            <AccessExplorer readOnly />
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {error && (
