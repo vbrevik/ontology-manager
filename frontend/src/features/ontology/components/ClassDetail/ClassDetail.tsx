@@ -4,6 +4,8 @@ import { useClassDetail } from './useClassDetail'
 import { ClassHeader } from './ClassHeader'
 import { ClassProperties } from './ClassProperties'
 import { ClassConflicts } from './ClassConflicts'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Network, GitFork } from 'lucide-react'
 
 function DetailSkeleton() {
   return (
@@ -16,6 +18,26 @@ function DetailSkeleton() {
         <div className="h-8 w-full animate-pulse rounded bg-muted" />
         <div className="h-8 w-full animate-pulse rounded bg-muted" />
       </div>
+    </div>
+  )
+}
+
+function GraphPlaceholder() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+      <Network className="h-12 w-12" />
+      <h3 className="text-lg font-medium">Graph Visualization</h3>
+      <p className="text-sm">Visual graph view coming soon</p>
+    </div>
+  )
+}
+
+function RelationshipsPlaceholder() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
+      <GitFork className="h-12 w-12" />
+      <h3 className="text-lg font-medium">Relationship Explorer</h3>
+      <p className="text-sm">Explore class relationships coming soon</p>
     </div>
   )
 }
@@ -54,31 +76,48 @@ export function ClassDetail() {
     ? classList.find((c) => c.id === classData.parent_class_id)
     : undefined
 
-  // Check for conflict data (graceful degradation)
   const conflictData = 'conflictData' in classData
     ? (classData as any).conflictData
     : undefined
 
   return (
-    <div className="h-full overflow-y-auto p-4" data-testid="class-detail">
-      <div className="space-y-6">
-        <ClassHeader
-          classData={classData}
-          parentClassName={parentClass?.name}
-          onDescriptionSave={updateDescription}
-          onNavigate={setSelectedClassId}
-          isDescriptionSaving={isDescriptionSaving}
-        />
+    <div className="flex h-full flex-col" data-testid="class-detail">
+      <Tabs defaultValue="detail" key={selectedClassId} className="flex h-full flex-col">
+        <TabsList className="mx-4 mt-3 shrink-0">
+          <TabsTrigger value="detail">Detail</TabsTrigger>
+          <TabsTrigger value="graph">Graph</TabsTrigger>
+          <TabsTrigger value="relationships">Relationships</TabsTrigger>
+        </TabsList>
 
-        <ClassProperties
-          properties={properties ?? []}
-          versionId={currentVersion?.id ?? ''}
-          onAddProperty={(input) => createProperty(input)}
-          onDeleteProperty={deleteProperty}
-        />
+        <TabsContent value="detail" className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-6">
+            <ClassHeader
+              classData={classData}
+              parentClassName={parentClass?.name}
+              onDescriptionSave={updateDescription}
+              onNavigate={setSelectedClassId}
+              isDescriptionSaving={isDescriptionSaving}
+            />
 
-        <ClassConflicts conflictData={conflictData} />
-      </div>
+            <ClassProperties
+              properties={properties ?? []}
+              versionId={currentVersion?.id ?? ''}
+              onAddProperty={(input) => createProperty(input)}
+              onDeleteProperty={deleteProperty}
+            />
+
+            <ClassConflicts conflictData={conflictData} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="graph" className="flex-1 overflow-y-auto p-4">
+          <GraphPlaceholder />
+        </TabsContent>
+
+        <TabsContent value="relationships" className="flex-1 overflow-y-auto p-4">
+          <RelationshipsPlaceholder />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
