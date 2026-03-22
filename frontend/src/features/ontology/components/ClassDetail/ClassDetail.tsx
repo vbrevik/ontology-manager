@@ -29,6 +29,7 @@ export function ClassDetail() {
     currentVersion,
     isLoading,
     isPlaceholderData,
+    isDescriptionSaving,
     updateDescription,
     createProperty,
     deleteProperty,
@@ -66,6 +67,7 @@ export function ClassDetail() {
           parentClassName={parentClass?.name}
           onDescriptionSave={updateDescription}
           onNavigate={setSelectedClassId}
+          isDescriptionSaving={isDescriptionSaving}
         />
 
         <ClassProperties

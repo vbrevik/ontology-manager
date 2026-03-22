@@ -296,3 +296,28 @@ useMutation({
   },
 })
 ```
+
+---
+
+## Implementation Notes
+
+**EditableText component:** Implemented with proper async save handling (internal isSaving state), separate refs for Input/Textarea (no `as any` cast), and configurable multiline/loading props.
+
+**CreateClassDialog:** Uses custom Dialog (not Radix DialogTrigger) due to the project's simplified dialog.tsx component. The trigger button renders separately from the Dialog, with open state managed via onClick. Added parent class selector (native `<select>`) populated from classes query. Added `onOpenChange` for Escape/overlay close.
+
+**Optimistic updates:** All four mutations (description, createProperty, updateProperty, deleteProperty) now include full optimistic update pattern: cancelQueries, snapshot, setQueryData, rollback on error. Toast notifications added to all onError handlers.
+
+**Code review fixes applied:**
+- Added toast notifications on mutation errors (was missing — users saw silent rollbacks)
+- Added onOpenChange to Dialog for Escape/overlay close support
+- Added parent class selector to CreateClassDialog
+- Added description field to createProperty optimistic temp object
+- Added async save handling to EditableText with internal loading state
+- Fixed ref typing in EditableText (separate refs per component type)
+- Mocked useToast in useClassDetail.test.tsx
+- Mocked CreateClassDialog in ClassTree.test.tsx
+
+## Test Results
+- `EditableText.test.tsx`: 9 tests (view mode, hover icon, edit mode, save, cancel, multiline, loading)
+- `CreateClassDialog.test.tsx`: 5 tests (open, validation, submit, close on success, error display)
+- All 17 component test files pass (109 total tests)

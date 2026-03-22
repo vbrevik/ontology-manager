@@ -3,6 +3,10 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
+vi.mock('@/components/ui/use-toast', () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}))
+
 vi.mock('@/features/ontology/lib/api', () => ({
   getClass: vi.fn(),
   fetchProperties: vi.fn(),

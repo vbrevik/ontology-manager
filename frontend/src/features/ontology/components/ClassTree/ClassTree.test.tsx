@@ -124,6 +124,9 @@ vi.mock('../shared/SourceBadge', () => ({
 vi.mock('../shared/ConflictBadge', () => ({
   ConflictBadge: () => <span data-testid="conflict-badge" />,
 }))
+vi.mock('../shared/CreateClassDialog', () => ({
+  CreateClassDialog: () => <button data-testid="create-class-dialog">New Class</button>,
+}))
 
 import { ClassTree } from './ClassTree'
 

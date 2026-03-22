@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import type { Class } from '@/features/ontology/lib/api'
 import { SourceBadge } from '../shared/SourceBadge'
 import { ClassLink } from '../shared/ClassLink'
+import { EditableText } from '../shared/EditableText'
 
 interface ClassHeaderProps {
   classData: Class
@@ -9,6 +9,7 @@ interface ClassHeaderProps {
   onDescriptionSave?: (description: string) => void
   onNavigate?: (classId: string) => void
   onSourceClick?: (sourceId: string) => void
+  isDescriptionSaving?: boolean
 }
 
 export function ClassHeader({
@@ -17,26 +18,11 @@ export function ClassHeader({
   onDescriptionSave,
   onNavigate,
   onSourceClick,
+  isDescriptionSaving,
 }: ClassHeaderProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editValue, setEditValue] = useState('')
-
   const sourceId = 'source_id' in classData
     ? (classData as Class & { source_id?: string }).source_id
     : undefined
-
-  const handleDescriptionClick = () => {
-    if (!classData.description) return
-    setEditValue(classData.description)
-    setIsEditing(true)
-  }
-
-  const handleSave = () => {
-    setIsEditing(false)
-    if (editValue !== classData.description) {
-      onDescriptionSave?.(editValue)
-    }
-  }
 
   return (
     <div className="space-y-3">
@@ -52,33 +38,15 @@ export function ClassHeader({
         </div>
       )}
 
-      {classData.description && !isEditing && (
-        <p
-          className="cursor-pointer text-sm text-muted-foreground hover:bg-muted/50 rounded px-1 -mx-1"
-          onClick={handleDescriptionClick}
-        >
-          {classData.description}
-        </p>
-      )}
-
-      {isEditing && (
-        <textarea
-          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSave}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault()
-              handleSave()
-            }
-            if (e.key === 'Escape') {
-              setIsEditing(false)
-            }
-          }}
-          autoFocus
-        />
-      )}
+      <EditableText
+        value={classData.description ?? ''}
+        onSave={(newDesc) => onDescriptionSave?.(newDesc)}
+        multiline
+        maxLength={2000}
+        loading={isDescriptionSaving}
+        placeholder="Add a description..."
+        className="text-muted-foreground"
+      />
     </div>
   )
 }

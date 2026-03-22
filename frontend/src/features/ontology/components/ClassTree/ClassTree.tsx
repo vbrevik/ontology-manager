@@ -12,6 +12,7 @@ import { useOntologyBrowser } from '../OntologyBrowserContext'
 import { useClassTree } from './useClassTree'
 import { ClassTreeSearch } from './ClassTreeSearch'
 import { ClassTreeNode, type ClassNodeData } from './ClassTreeNode'
+import { CreateClassDialog } from '../shared/CreateClassDialog'
 
 function classToNodeData(cls: Class): ClassNodeData {
   return {
@@ -98,6 +99,10 @@ export function ClassTree() {
 
   return (
     <div className="flex h-full flex-col" data-testid="class-tree">
+      <div className="flex items-center justify-between px-2 py-1.5">
+        <span className="text-sm font-semibold">Classes</span>
+        <CreateClassDialog />
+      </div>
       <ClassTreeSearch
         searchText={searchText}
         onSearchChange={setSearchText}
