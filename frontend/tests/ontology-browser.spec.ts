@@ -36,7 +36,7 @@ test.describe('Ontology Browser', () => {
     await page.addInitScript((token) => {
       localStorage.setItem('access_token', token);
     }, accessToken);
-    await page.goto('/admin/ontology/browser');
+    await page.goto('/ontology');
   });
 
   test('page loads with tree and detail panels', async ({ page }) => {
