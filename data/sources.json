@@ -11,7 +11,7 @@
       "id": "mpcg-ontology",
       "path": "./mpcg-ontology",
       "description": "Multi-perspective context ontology — universal context representation across domains",
-      "active": false
+      "active": true
     }
   ]
 }

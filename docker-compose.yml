@@ -7,8 +7,11 @@ services:
       - "5300:5300"
     volumes:
       - backend_data:/app/data
+      - ./data:/app/ontology-data
+      - /Users/vidarbrevik/projects/multi-perspective-context-ontology:/app/ontology-data/mpcg-ontology:ro
     environment:
       - RUST_LOG=info
+      - APP_ONTOLOGY_DATA_DIR=/app/ontology-data
       - DB_PASSWORD_FILE=/run/secrets/db_password
       - DB_HOST=db
       - DB_PORT=5432
@@ -29,7 +32,7 @@ services:
     build:
       context: ./database
     ports:
-      - "5433:5432"  # Expose for local testing
+      - "5434:5432"  # Expose for local testing (5433 occupied by OrbStack)
     environment:
       - POSTGRES_USER=app
       - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
@@ -68,11 +71,11 @@ services:
       - db_password
 
   frontend:
-    image: node:20-bullseye
-    working_dir: /app
+    build:
+      context: ./frontend
     volumes:
-      - ./frontend:/app
-    command: [ "npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5373" ]
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
     ports:
       - "5373:5373"
     depends_on:

@@ -233,7 +233,7 @@ describe('Ontology API - Classes', () => {
 
         const result = await fetchClasses();
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes');
+        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes', expect.objectContaining({ credentials: 'include' }));
         expect(result).toHaveLength(1);
         expect(result[0].name).toBe('User');
     });
@@ -258,7 +258,7 @@ describe('Ontology API - Classes', () => {
 
         const result = await getClass('c1');
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes/c1');
+        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes/c1', expect.objectContaining({ credentials: 'include' }));
         expect(result.name).toBe('User');
     });
 
@@ -278,11 +278,11 @@ describe('Ontology API - Classes', () => {
 
         const result = await createClass(input);
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes', {
+        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes', expect.objectContaining({
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify(input),
-        });
+        }));
         expect(result.name).toBe('Project');
     });
 
@@ -315,9 +315,10 @@ describe('Ontology API - Classes', () => {
 
         await deleteClass('c1');
 
-        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes/c1', {
+        expect(global.fetch).toHaveBeenCalledWith('/api/ontology/classes/c1', expect.objectContaining({
             method: 'DELETE',
-        });
+            credentials: 'include',
+        }));
     });
 
     it('should handle fetch error', async () => {

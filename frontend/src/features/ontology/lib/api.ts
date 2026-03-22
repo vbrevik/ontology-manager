@@ -242,22 +242,36 @@ export async function removeRolePermission(roleId: string, permissionName: strin
     if (!res.ok) throw new Error('Failed to remove role permission');
 }
 
+// Auth helper for ontology API calls
+async function ontologyFetch(url: string, options: RequestInit = {}): Promise<Response> {
+    const csrfToken = getCsrfToken();
+    return fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
+            ...options.headers,
+        },
+    });
+}
+
 // Ontology Classes API
 export async function fetchClasses(): Promise<Class[]> {
-    const res = await fetch('/api/ontology/classes');
+    const res = await ontologyFetch('/api/ontology/classes');
+    if (!res.ok) throw new Error('Failed to fetch classes');
     return res.json();
 }
 
 export async function getClass(id: string): Promise<Class> {
-    const res = await fetch(`/api/ontology/classes/${id}`);
+    const res = await ontologyFetch(`/api/ontology/classes/${id}`);
     if (!res.ok) throw new Error('Failed to fetch class');
     return res.json();
 }
 
 export async function createClass(input: CreateClassInput): Promise<Class> {
-    const res = await fetch('/api/ontology/classes', {
+    const res = await ontologyFetch('/api/ontology/classes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input)
     });
     if (!res.ok) throw new Error('Failed to create class');
@@ -265,9 +279,8 @@ export async function createClass(input: CreateClassInput): Promise<Class> {
 }
 
 export async function updateClass(id: string, input: UpdateClassInput): Promise<Class> {
-    const res = await fetch(`/api/ontology/classes/${id}`, {
+    const res = await ontologyFetch(`/api/ontology/classes/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input)
     });
     if (!res.ok) throw new Error('Failed to update class');
@@ -275,7 +288,7 @@ export async function updateClass(id: string, input: UpdateClassInput): Promise<
 }
 
 export async function deleteClass(id: string): Promise<void> {
-    const res = await fetch(`/api/ontology/classes/${id}`, {
+    const res = await ontologyFetch(`/api/ontology/classes/${id}`, {
         method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete class');
@@ -283,15 +296,14 @@ export async function deleteClass(id: string): Promise<void> {
 
 // Properties
 export async function fetchProperties(classId: string): Promise<Property[]> {
-    const res = await fetch(`/api/ontology/classes/${classId}/properties`);
+    const res = await ontologyFetch(`/api/ontology/classes/${classId}/properties`);
     if (!res.ok) throw new Error('Failed to fetch properties');
     return res.json();
 }
 
 export async function createProperty(input: CreatePropertyInput): Promise<Property> {
-    const res = await fetch('/api/ontology/properties', {
+    const res = await ontologyFetch('/api/ontology/properties', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input)
     });
     if (!res.ok) throw new Error('Failed to create property');
@@ -299,9 +311,8 @@ export async function createProperty(input: CreatePropertyInput): Promise<Proper
 }
 
 export async function updateProperty(id: string, input: UpdatePropertyInput): Promise<Property> {
-    const res = await fetch(`/api/ontology/properties/${id}`, {
+    const res = await ontologyFetch(`/api/ontology/properties/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(input)
     });
     if (!res.ok) throw new Error('Failed to update property');
@@ -309,7 +320,7 @@ export async function updateProperty(id: string, input: UpdatePropertyInput): Pr
 }
 
 export async function deleteProperty(id: string): Promise<void> {
-    const res = await fetch(`/api/ontology/properties/${id}`, {
+    const res = await ontologyFetch(`/api/ontology/properties/${id}`, {
         method: 'DELETE'
     });
     if (!res.ok) throw new Error('Failed to delete property');
@@ -317,13 +328,13 @@ export async function deleteProperty(id: string): Promise<void> {
 
 // Versions
 export async function fetchOntologyVersions(): Promise<OntologyVersion[]> {
-    const res = await fetch('/api/ontology/versions');
+    const res = await ontologyFetch('/api/ontology/versions');
     if (!res.ok) throw new Error('Failed to fetch ontology versions');
     return res.json();
 }
 
 export async function fetchCurrentVersion(): Promise<OntologyVersion> {
-    const res = await fetch('/api/ontology/versions/current');
+    const res = await ontologyFetch('/api/ontology/versions/current');
     if (!res.ok) throw new Error('Failed to fetch current version');
     return res.json();
 }

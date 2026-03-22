@@ -8,7 +8,7 @@ use axum::{
 };
 
 pub fn import_engine_routes() -> Router<ImportService> {
-    Router::new().route("/{id}/import", post(import_source).delete(unload_source))
+    Router::new().route("/:id/import", post(import_source).delete(unload_source))
 }
 
 async fn import_source(
