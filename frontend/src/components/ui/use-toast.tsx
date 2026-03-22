@@ -1,19 +1,23 @@
-import { } from 'react'
+import { useToastContext, type ToastVariant } from './toast'
 
 export interface ToastProps {
     title?: string
     description?: string
-    variant?: 'default' | 'destructive'
+    variant?: ToastVariant
+    duration?: number
 }
 
 export function useToast() {
-    const toast = ({ title, description, variant }: ToastProps) => {
-        console.log(`[Toast] ${variant === 'destructive' ? '❌' : '✅'} ${title}: ${description}`)
-        // Real implementation would use a toast provider
-        if (typeof window !== 'undefined') {
-            alert(`${title}\n${description}`)
-        }
+    const { toast } = useToastContext()
+
+    const toastFn = ({ title, description, variant = 'default', duration }: ToastProps) => {
+        toast({
+            title: title ?? '',
+            description,
+            variant,
+            duration,
+        })
     }
 
-    return { toast }
+    return { toast: toastFn }
 }

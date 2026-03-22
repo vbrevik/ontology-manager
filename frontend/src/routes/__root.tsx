@@ -9,20 +9,22 @@ import { FirefighterBanner } from '@/components/firefighter/FirefighterBanner'
 import { AuthProvider } from "@/features/auth/lib/context";
 import { AiProvider } from "@/features/ai/lib/context";
 import { ContextProvider } from "@/features/context/context-provider";
+import { ToastProvider } from "@/components/ui/toast";
 
 export const Route = createRootRoute({
   component: () => (
-    <AuthProvider>
-      <AiProvider>
-        <ContextProvider>
-          <div className="flex flex-col min-h-screen bg-background text-foreground">
-            <Navbar />
-            <Breadcrumbs />
-            <main className="flex-1">
-              <Outlet />
-            </main>
-            <FirefighterBanner />
-            <Footer />
+    <ToastProvider>
+      <AuthProvider>
+        <AiProvider>
+          <ContextProvider>
+            <div className="flex flex-col min-h-screen bg-background text-foreground">
+              <Navbar />
+              <Breadcrumbs />
+              <main className="flex-1">
+                <Outlet />
+              </main>
+              <FirefighterBanner />
+              <Footer />
             <TanStackDevtools
               config={{
                 position: 'bottom-right',
@@ -34,9 +36,10 @@ export const Route = createRootRoute({
                 },
               ]}
             />
-          </div>
-        </ContextProvider>
-      </AiProvider>
-    </AuthProvider>
+            </div>
+          </ContextProvider>
+        </AiProvider>
+      </AuthProvider>
+    </ToastProvider>
   ),
 })

@@ -4,10 +4,10 @@ import { getUserInfo, changePassword, updateProfile, listSessions, revokeSession
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { User, Lock, Mail, AlertCircle, CheckCircle2, Shield, Smartphone, Laptop, Trash2 } from 'lucide-react'
+import { User, Lock, Mail, Shield, Smartphone, Laptop, Trash2 } from 'lucide-react'
 import { getPasswordStrength } from '@/lib/password'
 import { MfaSetup } from '@/features/auth/components/MfaSetup'
+import { useToast } from '@/components/ui/use-toast'
 
 export const Route = createFileRoute('/profile')({
   component: Profile,
@@ -21,12 +21,11 @@ function Profile() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [message, setMessage] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
   const [profileLoading, setProfileLoading] = useState(false)
   const [sessions, setSessions] = useState<Session[]>([])
   const [sessionsLoading, setSessionsLoading] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     let mounted = true
@@ -52,11 +51,9 @@ function Profile() {
 
   async function onUpdateProfile(e: React.FormEvent) {
     e.preventDefault()
-    setMessage(null)
-    setIsSuccess(false)
 
     if (!editUsername.trim()) {
-      setMessage('Username cannot be empty')
+      toast({ variant: 'warning', title: 'Validation Error', description: 'Username cannot be empty' })
       return
     }
 
@@ -65,26 +62,23 @@ function Profile() {
     setProfileLoading(false)
 
     if (res.success) {
-      setIsSuccess(true)
-      setMessage('Profile updated successfully')
+      toast({ variant: 'success', title: 'Profile Updated', description: 'Your username has been saved successfully.' })
       setUsername(editUsername)
       setIsEditing(false)
     } else {
-      setMessage(res.error || 'Failed to update profile')
+      toast({ variant: 'destructive', title: 'Update Failed', description: res.error || 'Failed to update profile' })
     }
   }
 
   async function onUpdatePassword(e: React.FormEvent) {
     e.preventDefault()
-    setMessage(null)
-    setIsSuccess(false)
 
     if (newPassword !== confirmPassword) {
-      setMessage('New password and confirmation do not match')
+      toast({ variant: 'warning', title: 'Validation Error', description: 'New password and confirmation do not match' })
       return
     }
     if (newPassword.length < 8) {
-      setMessage('Password must be at least 8 characters')
+      toast({ variant: 'warning', title: 'Validation Error', description: 'Password must be at least 8 characters' })
       return
     }
 
@@ -93,22 +87,22 @@ function Profile() {
     setLoading(false)
 
     if (res.success) {
-      setIsSuccess(true)
-      setMessage('Password changed successfully')
+      toast({ variant: 'success', title: 'Password Changed', description: 'Your password has been updated successfully.' })
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } else {
-      setMessage(res.error || 'Failed to change password')
+      toast({ variant: 'destructive', title: 'Password Change Failed', description: res.error || 'Failed to change password' })
     }
   }
 
   async function onRevokeSession(id: string) {
     const res = await revokeSession(id)
     if (res.success) {
+      toast({ variant: 'success', title: 'Session Revoked', description: 'The session has been removed from your account.' })
       setSessions(sessions.filter(s => s.id !== id))
     } else {
-      setMessage(res.error || 'Failed to revoke session')
+      toast({ variant: 'destructive', title: 'Revoke Failed', description: res.error || 'Failed to revoke session' })
     }
   }
 
@@ -119,24 +113,6 @@ function Profile() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Profile Settings</h1>
       </div>
-
-      {message && (
-        <div className="animate-in slide-in-from-top-2 duration-300">
-          {isSuccess ? (
-            <Alert className="mb-6 py-3 px-4 text-sm border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle className="text-xs uppercase font-bold tracking-wider">Success</AlertTitle>
-              <AlertDescription className="text-xs">{message}</AlertDescription>
-            </Alert>
-          ) : (
-            <Alert variant="destructive" className="mb-6 py-3 px-4 text-sm">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="text-xs uppercase font-bold tracking-wider">Error</AlertTitle>
-              <AlertDescription className="text-xs">{message}</AlertDescription>
-            </Alert>
-          )}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Account Information Card */}
@@ -346,7 +322,6 @@ function Profile() {
                   setCurrentPassword('')
                   setNewPassword('')
                   setConfirmPassword('')
-                  setMessage(null)
                 }}
                 className="h-10 text-xs font-bold uppercase tracking-widest"
               >
