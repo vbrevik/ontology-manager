@@ -172,3 +172,17 @@ const persistExpanded = useCallback((expandedIds: Set<string>) => {
 6. Add debounced localStorage write for expanded nodes in `useClassTree`
 7. Update `ClassTreeSearch` to use `useLocalStorage` for source filter
 8. Verify all tests pass with `cd /Users/vidarbrevik/projects/ontology-manager/frontend && pnpm vitest run`
+
+---
+
+## Implementation Notes
+
+**Deviation: OntologyBrowserContext not modified.** selectedClassId and labelMode persistence was already implemented in section-03 with hand-rolled localStorage logic. Rather than refactoring to use useLocalStorage, kept existing working code.
+
+**Deviation: Source filter persistence in useClassTree, not ClassTreeSearch.** ClassTreeSearch is a controlled component receiving props from useClassTree. Persistence was added in useClassTree where the state lives, which is architecturally cleaner.
+
+**Code review fix: Unmount flush.** Added ref tracking for expandedIds and flush-on-unmount to prevent data loss if component unmounts during the 300ms debounce window.
+
+## Test Results
+- `statePersistence.test.ts`: 11 tests (useLocalStorage hook, debounce, expanded restoration, source filter)
+- All 18 component test files pass (120 total tests)

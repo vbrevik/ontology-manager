@@ -41,6 +41,10 @@
     "section-06-shared-components": {
       "status": "complete",
       "commit_hash": "bc273fc"
+    },
+    "section-07-inline-editing": {
+      "status": "complete",
+      "commit_hash": "abb0475"
     }
   },
   "pre_commit": {

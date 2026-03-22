@@ -1,14 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchClasses } from '@/features/ontology/lib/api'
 import type { Class } from '@/features/ontology/lib/api'
 import { buildClassTree, type ClassTreeData } from './buildClassTree'
+import { useLocalStorage } from '../useLocalStorage'
+
+const EXPANDED_KEY = 'ontology-browser-expanded'
+const SOURCE_FILTER_KEY = 'ontology-browser-source-filter'
 
 // source_id is not on the Class type yet — graceful degradation for Split 01
 function getSourceId(cls: Class): string | undefined {
   return 'source_id' in cls
     ? (cls as Class & { source_id?: string }).source_id
     : undefined
+}
+
+function readExpandedFromStorage(): Set<string> {
+  try {
+    const raw = localStorage.getItem(EXPANDED_KEY)
+    if (!raw) return new Set()
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return new Set(parsed)
+    return new Set()
+  } catch {
+    return new Set()
+  }
 }
 
 export interface UseClassTreeReturn {
@@ -21,11 +37,52 @@ export interface UseClassTreeReturn {
   sourceFilter: string | null
   setSourceFilter: (sourceId: string | null) => void
   availableSources: string[]
+  expandedIds: Set<string>
+  setExpandedIds: (ids: Set<string>) => void
 }
 
 export function useClassTree(): UseClassTreeReturn {
   const [searchText, setSearchText] = useState('')
-  const [sourceFilter, setSourceFilter] = useState<string | null>(null)
+  const [sourceFilter, setSourceFilterState] = useLocalStorage<string | null>(SOURCE_FILTER_KEY, null)
+  const [expandedIds, setExpandedIdsState] = useState<Set<string>>(readExpandedFromStorage)
+
+  // Debounced localStorage write for expanded nodes
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const expandedRef = useRef<Set<string>>(expandedIds)
+
+  const setExpandedIds = useCallback((ids: Set<string>) => {
+    setExpandedIdsState(ids)
+    expandedRef.current = ids
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(EXPANDED_KEY, JSON.stringify([...ids]))
+      } catch {
+        // Silently ignore storage errors
+      }
+    }, 300)
+  }, [])
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        try {
+          localStorage.setItem(EXPANDED_KEY, JSON.stringify([...expandedRef.current]))
+        } catch {
+          // Silently ignore storage errors
+        }
+      }
+    }
+  }, [])
+
+  const setSourceFilter = useCallback(
+    (sourceId: string | null) => {
+      setSourceFilterState(sourceId)
+    },
+    [setSourceFilterState],
+  )
 
   const {
     data: classList,
@@ -119,5 +176,7 @@ export function useClassTree(): UseClassTreeReturn {
     sourceFilter,
     setSourceFilter,
     availableSources,
+    expandedIds,
+    setExpandedIds,
   }
 }
