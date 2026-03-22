@@ -1,0 +1,52 @@
+{
+  "plugin_root": "/Users/vidarbrevik/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/requirements/02-import-engine/sections",
+  "target_dir": "/Users/vidarbrevik/projects/ontology-manager",
+  "state_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/requirements/02-import-engine/implementation",
+  "git_root": "/Users/vidarbrevik/projects/ontology-manager",
+  "commit_style": "conventional",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-migration",
+    "section-02-models",
+    "section-03-adapters",
+    "section-04-service",
+    "section-05-routes-integration",
+    "section-06-tests"
+  ],
+  "sections_state": {
+    "section-01-migration": {
+      "status": "complete",
+      "commit_hash": "ac5b935"
+    },
+    "section-02-models": {
+      "status": "complete",
+      "commit_hash": "66bde14"
+    },
+    "section-03-adapters": {
+      "status": "complete",
+      "commit_hash": "153f7e6"
+    },
+    "section-04-service": {
+      "status": "complete",
+      "commit_hash": "83f9986"
+    },
+    "section-05-routes-integration": {
+      "status": "complete",
+      "commit_hash": "cb2c97e"
+    },
+    "section-06-tests": {
+      "status": "complete",
+      "commit_hash": "511af13"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-21T17:30:07.954275+00:00"
+}

@@ -148,6 +148,14 @@ async fn main() {
         ontology_service.clone(),
         rebac_service.clone(),
     );
+    let source_service = features::ontology_sources::OntologySourceService::new(
+        pool.clone(),
+        std::path::PathBuf::from(&config.ontology_data_dir),
+    );
+    let import_service = features::import_engine::ImportService::new(
+        pool.clone(),
+        std::path::PathBuf::from(&config.ontology_data_dir),
+    );
 
     // MFA Service (Moved up)
     // let mfa_service = features::auth::mfa::MfaService::new(pool.clone(), "OntologyManager".to_string());
@@ -297,6 +305,20 @@ async fn main() {
             "/projects",
             features::projects::routes::project_routes()
                 .with_state(project_service)
+                .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
+                .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
+        )
+        .nest(
+            "/ontology-sources",
+            Router::new()
+                .merge(
+                    features::ontology_sources::ontology_sources_routes()
+                        .with_state(source_service),
+                )
+                .merge(
+                    features::import_engine::import_engine_routes()
+                        .with_state(import_service),
+                )
                 .layer(axum::middleware::from_fn(middleware::auth::auth_middleware))
                 .layer(axum::middleware::from_fn(middleware::csrf::validate_csrf)),
         );

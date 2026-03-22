@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TargetingRouteImport } from './routes/targeting'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -22,7 +23,9 @@ import { Route as DebugRouteImport } from './routes/debug'
 import { Route as ApiManagementRouteImport } from './routes/api-management'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TargetingIndexRouteImport } from './routes/targeting/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as OntologyIndexRouteImport } from './routes/ontology.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as StatsUsersRouteImport } from './routes/stats/users'
 import { Route as StatsSystemRouteImport } from './routes/stats/system'
@@ -41,14 +44,19 @@ import { Route as AdminDiscoveryRouteImport } from './routes/admin/discovery'
 import { Route as AdminAiRouteImport } from './routes/admin/ai'
 import { Route as AdminAccessRouteImport } from './routes/admin/access'
 import { Route as AdminAbacRouteImport } from './routes/admin/abac'
+import { Route as TargetingPlanningIndexRouteImport } from './routes/targeting/planning/index'
+import { Route as TargetingOpsIndexRouteImport } from './routes/targeting/ops/index'
 import { Route as AdminOntologyIndexRouteImport } from './routes/admin/ontology/index'
 import { Route as AdminDiscoveryIndexRouteImport } from './routes/admin/discovery/index'
+import { Route as AdminAccessIndexRouteImport } from './routes/admin/access/index'
+import { Route as TargetingPlanningPlanIdRouteImport } from './routes/targeting/planning/$planId'
 import { Route as AdminRolesManagerRouteImport } from './routes/admin/roles/manager'
 import { Route as AdminRolesDesignerRouteImport } from './routes/admin/roles/designer'
 import { Route as AdminRolesDelegationRouteImport } from './routes/admin/roles/delegation'
 import { Route as AdminOntologyVersionsRouteImport } from './routes/admin/ontology/versions'
 import { Route as AdminOntologyDesignerRouteImport } from './routes/admin/ontology/designer'
 import { Route as AdminOntologyContextsRouteImport } from './routes/admin/ontology/contexts'
+import { Route as AdminOntologyBrowserRouteImport } from './routes/admin/ontology/browser'
 import { Route as AdminOntologyRelationshipsRouteImport } from './routes/admin/ontology/Relationships'
 import { Route as AdminOntologyGraphRouteImport } from './routes/admin/ontology/Graph'
 import { Route as AdminOntologyClassesRouteImport } from './routes/admin/ontology/Classes'
@@ -60,6 +68,11 @@ import { Route as AdminAccessRolesRouteImport } from './routes/admin/access/Role
 import { Route as AdminAccessPermissionsRouteImport } from './routes/admin/access/Permissions'
 import { Route as AdminAccessMatrixRouteImport } from './routes/admin/access/Matrix'
 
+const TargetingRoute = TargetingRouteImport.update({
+  id: '/targeting',
+  path: '/targeting',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -125,10 +138,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TargetingIndexRoute = TargetingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TargetingRoute,
+} as any)
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProjectsRoute,
+} as any)
+const OntologyIndexRoute = OntologyIndexRouteImport.update({
+  id: '/ontology/',
+  path: '/ontology/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -220,6 +243,16 @@ const AdminAbacRoute = AdminAbacRouteImport.update({
   path: '/abac',
   getParentRoute: () => AdminRoute,
 } as any)
+const TargetingPlanningIndexRoute = TargetingPlanningIndexRouteImport.update({
+  id: '/planning/',
+  path: '/planning/',
+  getParentRoute: () => TargetingRoute,
+} as any)
+const TargetingOpsIndexRoute = TargetingOpsIndexRouteImport.update({
+  id: '/ops/',
+  path: '/ops/',
+  getParentRoute: () => TargetingRoute,
+} as any)
 const AdminOntologyIndexRoute = AdminOntologyIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -229,6 +262,16 @@ const AdminDiscoveryIndexRoute = AdminDiscoveryIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminDiscoveryRoute,
+} as any)
+const AdminAccessIndexRoute = AdminAccessIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAccessRoute,
+} as any)
+const TargetingPlanningPlanIdRoute = TargetingPlanningPlanIdRouteImport.update({
+  id: '/planning/$planId',
+  path: '/planning/$planId',
+  getParentRoute: () => TargetingRoute,
 } as any)
 const AdminRolesManagerRoute = AdminRolesManagerRouteImport.update({
   id: '/roles/manager',
@@ -258,6 +301,11 @@ const AdminOntologyDesignerRoute = AdminOntologyDesignerRouteImport.update({
 const AdminOntologyContextsRoute = AdminOntologyContextsRouteImport.update({
   id: '/contexts',
   path: '/contexts',
+  getParentRoute: () => AdminOntologyRoute,
+} as any)
+const AdminOntologyBrowserRoute = AdminOntologyBrowserRouteImport.update({
+  id: '/browser',
+  path: '/browser',
   getParentRoute: () => AdminOntologyRoute,
 } as any)
 const AdminOntologyRelationshipsRoute =
@@ -326,6 +374,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
+  '/targeting': typeof TargetingRouteWithChildren
   '/admin/abac': typeof AdminAbacRoute
   '/admin/access': typeof AdminAccessRouteWithChildren
   '/admin/ai': typeof AdminAiRoute
@@ -344,7 +393,9 @@ export interface FileRoutesByFullPath {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/ontology/': typeof OntologyIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/targeting/': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -355,14 +406,19 @@ export interface FileRoutesByFullPath {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/browser': typeof AdminOntologyBrowserRoute
   '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/targeting/planning/$planId': typeof TargetingPlanningPlanIdRoute
+  '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
   '/admin/ontology/': typeof AdminOntologyIndexRoute
+  '/targeting/ops/': typeof TargetingOpsIndexRoute
+  '/targeting/planning/': typeof TargetingPlanningIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -377,7 +433,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
   '/admin/abac': typeof AdminAbacRoute
-  '/admin/access': typeof AdminAccessRouteWithChildren
   '/admin/ai': typeof AdminAiRoute
   '/admin/firefighter': typeof AdminFirefighterRoute
   '/admin/navigation': typeof AdminNavigationRoute
@@ -392,7 +447,9 @@ export interface FileRoutesByTo {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin': typeof AdminIndexRoute
+  '/ontology': typeof OntologyIndexRoute
   '/projects': typeof ProjectsIndexRoute
+  '/targeting': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -403,14 +460,19 @@ export interface FileRoutesByTo {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/browser': typeof AdminOntologyBrowserRoute
   '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/targeting/planning/$planId': typeof TargetingPlanningPlanIdRoute
+  '/admin/access': typeof AdminAccessIndexRoute
   '/admin/discovery': typeof AdminDiscoveryIndexRoute
   '/admin/ontology': typeof AdminOntologyIndexRoute
+  '/targeting/ops': typeof TargetingOpsIndexRoute
+  '/targeting/planning': typeof TargetingPlanningIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -427,6 +489,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRouteWithChildren
   '/register': typeof RegisterRoute
   '/reports': typeof ReportsRoute
+  '/targeting': typeof TargetingRouteWithChildren
   '/admin/abac': typeof AdminAbacRoute
   '/admin/access': typeof AdminAccessRouteWithChildren
   '/admin/ai': typeof AdminAiRoute
@@ -445,7 +508,9 @@ export interface FileRoutesById {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/ontology/': typeof OntologyIndexRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/targeting/': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
   '/admin/access/Permissions': typeof AdminAccessPermissionsRoute
   '/admin/access/Roles': typeof AdminAccessRolesRoute
@@ -456,14 +521,19 @@ export interface FileRoutesById {
   '/admin/ontology/Classes': typeof AdminOntologyClassesRoute
   '/admin/ontology/Graph': typeof AdminOntologyGraphRoute
   '/admin/ontology/Relationships': typeof AdminOntologyRelationshipsRoute
+  '/admin/ontology/browser': typeof AdminOntologyBrowserRoute
   '/admin/ontology/contexts': typeof AdminOntologyContextsRoute
   '/admin/ontology/designer': typeof AdminOntologyDesignerRoute
   '/admin/ontology/versions': typeof AdminOntologyVersionsRoute
   '/admin/roles/delegation': typeof AdminRolesDelegationRoute
   '/admin/roles/designer': typeof AdminRolesDesignerRoute
   '/admin/roles/manager': typeof AdminRolesManagerRoute
+  '/targeting/planning/$planId': typeof TargetingPlanningPlanIdRoute
+  '/admin/access/': typeof AdminAccessIndexRoute
   '/admin/discovery/': typeof AdminDiscoveryIndexRoute
   '/admin/ontology/': typeof AdminOntologyIndexRoute
+  '/targeting/ops/': typeof TargetingOpsIndexRoute
+  '/targeting/planning/': typeof TargetingPlanningIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -481,6 +551,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/register'
     | '/reports'
+    | '/targeting'
     | '/admin/abac'
     | '/admin/access'
     | '/admin/ai'
@@ -499,7 +570,9 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/ontology/'
     | '/projects/'
+    | '/targeting/'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -510,14 +583,19 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/browser'
     | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/targeting/planning/$planId'
+    | '/admin/access/'
     | '/admin/discovery/'
     | '/admin/ontology/'
+    | '/targeting/ops/'
+    | '/targeting/planning/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -532,7 +610,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reports'
     | '/admin/abac'
-    | '/admin/access'
     | '/admin/ai'
     | '/admin/firefighter'
     | '/admin/navigation'
@@ -547,7 +624,9 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin'
+    | '/ontology'
     | '/projects'
+    | '/targeting'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -558,14 +637,19 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/browser'
     | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/targeting/planning/$planId'
+    | '/admin/access'
     | '/admin/discovery'
     | '/admin/ontology'
+    | '/targeting/ops'
+    | '/targeting/planning'
   id:
     | '__root__'
     | '/'
@@ -581,6 +665,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/register'
     | '/reports'
+    | '/targeting'
     | '/admin/abac'
     | '/admin/access'
     | '/admin/ai'
@@ -599,7 +684,9 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/ontology/'
     | '/projects/'
+    | '/targeting/'
     | '/admin/access/Matrix'
     | '/admin/access/Permissions'
     | '/admin/access/Roles'
@@ -610,14 +697,19 @@ export interface FileRouteTypes {
     | '/admin/ontology/Classes'
     | '/admin/ontology/Graph'
     | '/admin/ontology/Relationships'
+    | '/admin/ontology/browser'
     | '/admin/ontology/contexts'
     | '/admin/ontology/designer'
     | '/admin/ontology/versions'
     | '/admin/roles/delegation'
     | '/admin/roles/designer'
     | '/admin/roles/manager'
+    | '/targeting/planning/$planId'
+    | '/admin/access/'
     | '/admin/discovery/'
     | '/admin/ontology/'
+    | '/targeting/ops/'
+    | '/targeting/planning/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -634,14 +726,23 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RegisterRoute: typeof RegisterRoute
   ReportsRoute: typeof ReportsRoute
+  TargetingRoute: typeof TargetingRouteWithChildren
   ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
   StatsSessionsRoute: typeof StatsSessionsRoute
   StatsSystemRoute: typeof StatsSystemRoute
   StatsUsersRoute: typeof StatsUsersRoute
+  OntologyIndexRoute: typeof OntologyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/targeting': {
+      id: '/targeting'
+      path: '/targeting'
+      fullPath: '/targeting'
+      preLoaderRoute: typeof TargetingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -733,12 +834,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/targeting/': {
+      id: '/targeting/'
+      path: '/'
+      fullPath: '/targeting/'
+      preLoaderRoute: typeof TargetingIndexRouteImport
+      parentRoute: typeof TargetingRoute
+    }
     '/projects/': {
       id: '/projects/'
       path: '/'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof ProjectsRoute
+    }
+    '/ontology/': {
+      id: '/ontology/'
+      path: '/ontology'
+      fullPath: '/ontology/'
+      preLoaderRoute: typeof OntologyIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
@@ -866,6 +981,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAbacRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/targeting/planning/': {
+      id: '/targeting/planning/'
+      path: '/planning'
+      fullPath: '/targeting/planning/'
+      preLoaderRoute: typeof TargetingPlanningIndexRouteImport
+      parentRoute: typeof TargetingRoute
+    }
+    '/targeting/ops/': {
+      id: '/targeting/ops/'
+      path: '/ops'
+      fullPath: '/targeting/ops/'
+      preLoaderRoute: typeof TargetingOpsIndexRouteImport
+      parentRoute: typeof TargetingRoute
+    }
     '/admin/ontology/': {
       id: '/admin/ontology/'
       path: '/'
@@ -879,6 +1008,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/discovery/'
       preLoaderRoute: typeof AdminDiscoveryIndexRouteImport
       parentRoute: typeof AdminDiscoveryRoute
+    }
+    '/admin/access/': {
+      id: '/admin/access/'
+      path: '/'
+      fullPath: '/admin/access/'
+      preLoaderRoute: typeof AdminAccessIndexRouteImport
+      parentRoute: typeof AdminAccessRoute
+    }
+    '/targeting/planning/$planId': {
+      id: '/targeting/planning/$planId'
+      path: '/planning/$planId'
+      fullPath: '/targeting/planning/$planId'
+      preLoaderRoute: typeof TargetingPlanningPlanIdRouteImport
+      parentRoute: typeof TargetingRoute
     }
     '/admin/roles/manager': {
       id: '/admin/roles/manager'
@@ -920,6 +1063,13 @@ declare module '@tanstack/react-router' {
       path: '/contexts'
       fullPath: '/admin/ontology/contexts'
       preLoaderRoute: typeof AdminOntologyContextsRouteImport
+      parentRoute: typeof AdminOntologyRoute
+    }
+    '/admin/ontology/browser': {
+      id: '/admin/ontology/browser'
+      path: '/browser'
+      fullPath: '/admin/ontology/browser'
+      preLoaderRoute: typeof AdminOntologyBrowserRouteImport
       parentRoute: typeof AdminOntologyRoute
     }
     '/admin/ontology/Relationships': {
@@ -1002,6 +1152,7 @@ interface AdminAccessRouteChildren {
   AdminAccessExplorerRoute: typeof AdminAccessExplorerRoute
   AdminAccessImpactRoute: typeof AdminAccessImpactRoute
   AdminAccessPoliciesRoute: typeof AdminAccessPoliciesRoute
+  AdminAccessIndexRoute: typeof AdminAccessIndexRoute
 }
 
 const AdminAccessRouteChildren: AdminAccessRouteChildren = {
@@ -1011,6 +1162,7 @@ const AdminAccessRouteChildren: AdminAccessRouteChildren = {
   AdminAccessExplorerRoute: AdminAccessExplorerRoute,
   AdminAccessImpactRoute: AdminAccessImpactRoute,
   AdminAccessPoliciesRoute: AdminAccessPoliciesRoute,
+  AdminAccessIndexRoute: AdminAccessIndexRoute,
 }
 
 const AdminAccessRouteWithChildren = AdminAccessRoute._addFileChildren(
@@ -1035,6 +1187,7 @@ interface AdminOntologyRouteChildren {
   AdminOntologyClassesRoute: typeof AdminOntologyClassesRoute
   AdminOntologyGraphRoute: typeof AdminOntologyGraphRoute
   AdminOntologyRelationshipsRoute: typeof AdminOntologyRelationshipsRoute
+  AdminOntologyBrowserRoute: typeof AdminOntologyBrowserRoute
   AdminOntologyContextsRoute: typeof AdminOntologyContextsRoute
   AdminOntologyDesignerRoute: typeof AdminOntologyDesignerRoute
   AdminOntologyVersionsRoute: typeof AdminOntologyVersionsRoute
@@ -1045,6 +1198,7 @@ const AdminOntologyRouteChildren: AdminOntologyRouteChildren = {
   AdminOntologyClassesRoute: AdminOntologyClassesRoute,
   AdminOntologyGraphRoute: AdminOntologyGraphRoute,
   AdminOntologyRelationshipsRoute: AdminOntologyRelationshipsRoute,
+  AdminOntologyBrowserRoute: AdminOntologyBrowserRoute,
   AdminOntologyContextsRoute: AdminOntologyContextsRoute,
   AdminOntologyDesignerRoute: AdminOntologyDesignerRoute,
   AdminOntologyVersionsRoute: AdminOntologyVersionsRoute,
@@ -1109,6 +1263,24 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
   ProjectsRouteChildren,
 )
 
+interface TargetingRouteChildren {
+  TargetingIndexRoute: typeof TargetingIndexRoute
+  TargetingPlanningPlanIdRoute: typeof TargetingPlanningPlanIdRoute
+  TargetingOpsIndexRoute: typeof TargetingOpsIndexRoute
+  TargetingPlanningIndexRoute: typeof TargetingPlanningIndexRoute
+}
+
+const TargetingRouteChildren: TargetingRouteChildren = {
+  TargetingIndexRoute: TargetingIndexRoute,
+  TargetingPlanningPlanIdRoute: TargetingPlanningPlanIdRoute,
+  TargetingOpsIndexRoute: TargetingOpsIndexRoute,
+  TargetingPlanningIndexRoute: TargetingPlanningIndexRoute,
+}
+
+const TargetingRouteWithChildren = TargetingRoute._addFileChildren(
+  TargetingRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1123,10 +1295,12 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRouteWithChildren,
   RegisterRoute: RegisterRoute,
   ReportsRoute: ReportsRoute,
+  TargetingRoute: TargetingRouteWithChildren,
   ResetPasswordTokenRoute: ResetPasswordTokenRoute,
   StatsSessionsRoute: StatsSessionsRoute,
   StatsSystemRoute: StatsSystemRoute,
   StatsUsersRoute: StatsUsersRoute,
+  OntologyIndexRoute: OntologyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

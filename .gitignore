@@ -20,6 +20,16 @@ test-results/
 data/emails.log
 # Add secrets/
 
+# Ontology data sources (symlinked from external repos, local paths)
+data/mpcg-ontology
+data/system-ontology
+
+# Editor/IDE
+.cursor/
+
+# Build artifacts
+*.profraw
+
 # Backup data (local only)
 external_storage/
 backup-agent/*.log

@@ -10,16 +10,21 @@ import {
     ChevronLeft,
     ChevronRight,
     Sparkles,
+    Network,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { WorkspaceSwitcher } from '@/components/ui/workspace-switcher'
 
 const mainNavItems = [
     {
         label: 'Dashboard',
         href: '/',
         icon: LayoutDashboard,
+    },
+    {
+        label: 'Ontology',
+        href: '/ontology',
+        icon: Network,
     },
     {
         label: 'Projects',
@@ -75,10 +80,6 @@ export function MainSidebar() {
                 collapsed ? "w-16" : "w-64"
             )}
         >
-            <div className="p-3 border-b border-border/40">
-                <WorkspaceSwitcher collapsed={collapsed} />
-            </div>
-
             <div className="flex-1 py-4 overflow-y-auto">
                 <nav className="px-2 space-y-1">
                     {!collapsed && (

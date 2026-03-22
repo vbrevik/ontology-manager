@@ -61,6 +61,8 @@ pub struct Class {
     pub deprecated_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub source_id: Option<String>,
+    pub is_system: bool,
 }
 
 /// Class with resolved parent name for API responses
@@ -75,6 +77,8 @@ pub struct ClassWithParent {
     pub is_abstract: bool,
     pub is_deprecated: bool,
     pub created_at: DateTime<Utc>,
+    pub source_id: Option<String>,
+    pub is_system: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,6 +122,7 @@ pub struct Property {
     pub deprecated_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub source_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -221,6 +226,7 @@ pub struct RelationshipType {
     pub allowed_target_class_id: Option<Uuid>,
     pub grants_permission_inheritance: bool,
     pub created_at: DateTime<Utc>,
+    pub source_id: Option<String>,
 }
 
 /// A relationship instance between two entities

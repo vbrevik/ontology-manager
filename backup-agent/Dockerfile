@@ -2,6 +2,7 @@ FROM postgres:16-alpine
 
 # Install required packages
 RUN apk add --no-cache \
+    aws-cli \
     python3 \
     e2fsprogs \
     tzdata

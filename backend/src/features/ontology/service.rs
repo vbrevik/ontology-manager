@@ -340,9 +340,10 @@ impl OntologyService {
     ) -> Result<Vec<ClassWithParent>, OntologyError> {
         let classes = sqlx::query_as::<_, ClassWithParent>(
             r#"
-            SELECT c.id, c.name, c.description, c.parent_class_id, 
+            SELECT c.id, c.name, c.description, c.parent_class_id,
                    p.name as parent_class_name, c.version_id,
-                   c.is_abstract, c.is_deprecated, c.created_at
+                   c.is_abstract, c.is_deprecated, c.created_at,
+                   c.source_id, c.is_system
             FROM classes c
             LEFT JOIN classes p ON c.parent_class_id = p.id
             WHERE (c.tenant_id IS NULL OR c.tenant_id = $1)
