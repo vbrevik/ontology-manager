@@ -1,0 +1,42 @@
+{
+  "plugin_root": "/Users/vidarbrevik/.claude/plugins/cache/piercelamb-plugins/deep-implement/0.2.0",
+  "sections_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/superpowers/specs/sections",
+  "target_dir": "/Users/vidarbrevik/projects/ontology-manager",
+  "state_dir": "/Users/vidarbrevik/projects/ontology-manager/docs/superpowers/specs/implementation",
+  "git_root": "/Users/vidarbrevik/projects/ontology-manager",
+  "commit_style": "conventional",
+  "test_command": "uv run pytest",
+  "sections": [
+    "section-01-route-and-redirect",
+    "section-02-navigation",
+    "section-03-detail-panel-tabs",
+    "section-04-testing"
+  ],
+  "sections_state": {
+    "section-01-route-and-redirect": {
+      "status": "complete",
+      "commit_hash": "fbf0c5e"
+    },
+    "section-02-navigation": {
+      "status": "complete",
+      "commit_hash": "bcdef4c"
+    },
+    "section-03-detail-panel-tabs": {
+      "status": "complete",
+      "commit_hash": "f1b9012"
+    },
+    "section-04-testing": {
+      "status": "complete",
+      "commit_hash": "cb5f6a6"
+    }
+  },
+  "pre_commit": {
+    "present": false,
+    "type": "none",
+    "config_file": null,
+    "native_hook": null,
+    "may_modify_files": false,
+    "detected_formatters": []
+  },
+  "created_at": "2026-03-22T20:45:40.341501+00:00"
+}
