@@ -45,6 +45,10 @@
     "section-07-inline-editing": {
       "status": "complete",
       "commit_hash": "abb0475"
+    },
+    "section-08-state-persistence": {
+      "status": "complete",
+      "commit_hash": "672cb73"
     }
   },
   "pre_commit": {
