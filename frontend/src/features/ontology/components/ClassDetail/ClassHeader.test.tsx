@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { ClassHeader } from './ClassHeader'
 import type { Class } from '@/features/ontology/lib/api'
 
@@ -63,5 +63,29 @@ describe('ClassHeader', () => {
       />,
     )
     expect(screen.getByText('A motorized vehicle')).toBeInTheDocument()
+  })
+
+  it('clicking description enters edit mode', () => {
+    render(
+      <ClassHeader classData={makeClass({ description: 'A vehicle' })} />,
+    )
+    fireEvent.click(screen.getByText('A vehicle'))
+    expect(screen.getByRole('textbox')).toBeInTheDocument()
+  })
+
+  it('saving description calls onDescriptionSave', () => {
+    const onSave = vi.fn()
+    render(
+      <ClassHeader
+        classData={makeClass({ description: 'A vehicle' })}
+        onDescriptionSave={onSave}
+      />,
+    )
+    fireEvent.click(screen.getByText('A vehicle'))
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: 'Updated' },
+    })
+    fireEvent.blur(screen.getByRole('textbox'))
+    expect(onSave).toHaveBeenCalledWith('Updated')
   })
 })

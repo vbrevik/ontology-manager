@@ -33,6 +33,10 @@
     "section-04-tree-component": {
       "status": "complete",
       "commit_hash": "85cd36a"
+    },
+    "section-05-detail-panel": {
+      "status": "complete",
+      "commit_hash": "63b8825"
     }
   },
   "pre_commit": {

@@ -18,6 +18,7 @@ import type { Property } from '@/features/ontology/lib/api'
 
 interface ClassPropertiesProps {
   properties: Property[]
+  versionId?: string
   onAddProperty?: (input: {
     name: string
     data_type: string
@@ -33,6 +34,7 @@ const DATA_TYPES = ['string', 'integer', 'float', 'boolean', 'reference', 'json'
 
 export function ClassProperties({
   properties,
+  versionId: _versionId,
   onAddProperty,
   onEditProperty,
   onDeleteProperty,

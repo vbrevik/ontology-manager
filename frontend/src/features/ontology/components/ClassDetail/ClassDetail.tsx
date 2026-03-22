@@ -26,7 +26,9 @@ export function ClassDetail() {
   const {
     classData,
     properties,
+    currentVersion,
     isLoading,
+    isPlaceholderData,
     updateDescription,
     createProperty,
     deleteProperty,
@@ -43,7 +45,7 @@ export function ClassDetail() {
     )
   }
 
-  if (isLoading || !classData) {
+  if (isLoading || isPlaceholderData || !classData) {
     return <DetailSkeleton />
   }
 
@@ -67,6 +69,7 @@ export function ClassDetail() {
 
         <ClassProperties
           properties={properties ?? []}
+          versionId={currentVersion?.id ?? ''}
           onAddProperty={(input) => createProperty(input)}
           onDeleteProperty={deleteProperty}
         />
