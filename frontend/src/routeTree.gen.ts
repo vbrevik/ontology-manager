@@ -25,6 +25,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TargetingIndexRouteImport } from './routes/targeting/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as OntologyIndexRouteImport } from './routes/ontology.index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as StatsUsersRouteImport } from './routes/stats/users'
 import { Route as StatsSystemRouteImport } from './routes/stats/system'
@@ -146,6 +147,11 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => ProjectsRoute,
+} as any)
+const OntologyIndexRoute = OntologyIndexRouteImport.update({
+  id: '/ontology/',
+  path: '/ontology/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -387,6 +393,7 @@ export interface FileRoutesByFullPath {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/ontology/': typeof OntologyIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/targeting/': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
@@ -440,6 +447,7 @@ export interface FileRoutesByTo {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin': typeof AdminIndexRoute
+  '/ontology': typeof OntologyIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/targeting': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
@@ -500,6 +508,7 @@ export interface FileRoutesById {
   '/stats/system': typeof StatsSystemRoute
   '/stats/users': typeof StatsUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/ontology/': typeof OntologyIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/targeting/': typeof TargetingIndexRoute
   '/admin/access/Matrix': typeof AdminAccessMatrixRoute
@@ -561,6 +570,7 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/ontology/'
     | '/projects/'
     | '/targeting/'
     | '/admin/access/Matrix'
@@ -614,6 +624,7 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin'
+    | '/ontology'
     | '/projects'
     | '/targeting'
     | '/admin/access/Matrix'
@@ -673,6 +684,7 @@ export interface FileRouteTypes {
     | '/stats/system'
     | '/stats/users'
     | '/admin/'
+    | '/ontology/'
     | '/projects/'
     | '/targeting/'
     | '/admin/access/Matrix'
@@ -719,6 +731,7 @@ export interface RootRouteChildren {
   StatsSessionsRoute: typeof StatsSessionsRoute
   StatsSystemRoute: typeof StatsSystemRoute
   StatsUsersRoute: typeof StatsUsersRoute
+  OntologyIndexRoute: typeof OntologyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -834,6 +847,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexRouteImport
       parentRoute: typeof ProjectsRoute
+    }
+    '/ontology/': {
+      id: '/ontology/'
+      path: '/ontology'
+      fullPath: '/ontology/'
+      preLoaderRoute: typeof OntologyIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
@@ -1280,6 +1300,7 @@ const rootRouteChildren: RootRouteChildren = {
   StatsSessionsRoute: StatsSessionsRoute,
   StatsSystemRoute: StatsSystemRoute,
   StatsUsersRoute: StatsUsersRoute,
+  OntologyIndexRoute: OntologyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

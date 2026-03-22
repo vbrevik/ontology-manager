@@ -1,10 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { OntologyBrowser } from '@/features/ontology/components/OntologyBrowser'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/admin/ontology/browser')({
-  component: OntologyBrowserPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/ontology' })
+  },
 })
-
-function OntologyBrowserPage() {
-  return <OntologyBrowser />
-}
