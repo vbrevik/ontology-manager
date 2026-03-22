@@ -7,12 +7,16 @@ interface ClassHeaderProps {
   classData: Class
   parentClassName?: string
   onDescriptionSave?: (description: string) => void
+  onNavigate?: (classId: string) => void
+  onSourceClick?: (sourceId: string) => void
 }
 
 export function ClassHeader({
   classData,
   parentClassName,
   onDescriptionSave,
+  onNavigate,
+  onSourceClick,
 }: ClassHeaderProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState('')
@@ -38,15 +42,13 @@ export function ClassHeader({
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-semibold">{classData.name}</h2>
-        {sourceId && <SourceBadge sourceId={sourceId} />}
+        {sourceId && <SourceBadge sourceId={sourceId} onSourceClick={onSourceClick} />}
       </div>
 
       {classData.parent_class_id && parentClassName && (
         <div className="text-sm text-muted-foreground">
           Parent:{' '}
-          <ClassLink classId={classData.parent_class_id}>
-            {parentClassName}
-          </ClassLink>
+          <ClassLink classId={classData.parent_class_id} label={parentClassName} onNavigate={onNavigate} />
         </div>
       )}
 

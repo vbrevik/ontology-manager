@@ -186,3 +186,21 @@ When using `ClassLink` inside the tree or detail panel, the consumer retrieves `
 - The `ConflictBadge` tooltip test requires wrapping the rendered component in a `TooltipProvider` from Shadcn.
 - For the SourceBadge color tests, inspect `element.style.backgroundColor` on the rendered badge element.
 - No API mocking is needed for these components -- they are purely presentational with callback props.
+- ConflictBadge tooltip test uses `findAllByText` instead of `findByText` because Radix renders tooltip text in both visible and aria-hidden elements.
+
+---
+
+## Implementation Notes
+
+**Deviation: ClassLink uses `label` prop instead of `children`**
+The plan's suggestion to rename `className` to `label` was adopted, but the component also switched from `children` to `label` for the display text. This is simpler and avoids the `className` HTML attribute collision entirely. Consumers updated: `ClassHeader.tsx`, `ClassDetail.test.tsx`, `ClassHeader.test.tsx`.
+
+**Code Review Fix: Wired onNavigate and onSourceClick in ClassHeader**
+The code review identified that `ClassLink` and `SourceBadge` in `ClassHeader` were rendered without their callback props, making them non-functional. Added `onNavigate` and `onSourceClick` props to `ClassHeaderProps` and wired `setSelectedClassId` from `OntologyBrowserContext` through `ClassDetail`.
+
+## Test Results
+
+- `SourceBadge.test.tsx`: 7 tests (renders, abbreviation, color hash, null handling, click callback)
+- `ConflictBadge.test.tsx`: 2 tests (icon rendering, tooltip on hover)
+- `ClassLink.test.tsx`: 4 tests (text rendering, click callback, styling, button element)
+- All 15 component test files pass (95 total tests)

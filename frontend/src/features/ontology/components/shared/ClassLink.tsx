@@ -1,17 +1,18 @@
-interface ClassLinkProps {
+export interface ClassLinkProps {
   classId: string
-  className?: string
-  children: React.ReactNode
+  label: string
+  onNavigate?: (classId: string) => void
 }
 
-export function ClassLink({ classId, children }: ClassLinkProps) {
+export function ClassLink({ classId, label, onNavigate }: ClassLinkProps) {
   return (
     <button
-      className="text-sm text-primary underline-offset-4 hover:underline"
+      className="bg-transparent border-none p-0 font-inherit text-sm text-primary underline-offset-4 hover:underline cursor-pointer"
       data-testid="class-link"
       data-class-id={classId}
+      onClick={onNavigate ? () => onNavigate(classId) : undefined}
     >
-      {children}
+      {label}
     </button>
   )
 }

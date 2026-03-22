@@ -10,8 +10,8 @@ vi.mock('../shared/SourceBadge', () => ({
 }))
 
 vi.mock('../shared/ClassLink', () => ({
-  ClassLink: ({ children }: { children: React.ReactNode }) => (
-    <span data-testid="class-link">{children}</span>
+  ClassLink: ({ label }: { label: string }) => (
+    <span data-testid="class-link">{label}</span>
   ),
 }))
 

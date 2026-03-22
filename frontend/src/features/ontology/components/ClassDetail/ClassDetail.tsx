@@ -21,7 +21,7 @@ function DetailSkeleton() {
 }
 
 export function ClassDetail() {
-  const { selectedClassId } = useOntologyBrowser()
+  const { selectedClassId, setSelectedClassId } = useOntologyBrowser()
   const { classList } = useClassTree()
   const {
     classData,
@@ -65,6 +65,7 @@ export function ClassDetail() {
           classData={classData}
           parentClassName={parentClass?.name}
           onDescriptionSave={updateDescription}
+          onNavigate={setSelectedClassId}
         />
 
         <ClassProperties
