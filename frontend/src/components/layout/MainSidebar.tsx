@@ -10,6 +10,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Sparkles,
+    Network,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,11 @@ const mainNavItems = [
         label: 'Dashboard',
         href: '/',
         icon: LayoutDashboard,
+    },
+    {
+        label: 'Ontology',
+        href: '/ontology',
+        icon: Network,
     },
     {
         label: 'Projects',
